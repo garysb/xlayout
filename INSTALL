@@ -1,0 +1,20 @@
+xlayout install manual
+
+-----BEGINNERS GUIDE-----
+
+This is intended for those not fluent with linux
+
+Please type the following at root:
+
+sh ./install.sh
+
+-----NOT SO BEGINNERS GUIDE-----
+
+Setting prefix: There is currently only the 'Edit the Makefile' method.
+		(sorry, getting to it)
+
+then type the following:
+
+make clean
+make
+make install

@@ -1,0 +1,68 @@
+.TH xlayout 1
+.SH NAME
+xlayout \- Manipulate X11 windows and pointer from console
+.SH SYNOPSIS
+.B xlayout [-set|-show|-help|-version|-list][options]
+.I ""
+.SH DESCRIPTION
+xlayout controls the position and size of X11 windows or pointer from a console
+or remotely. Some of the features include hiding or setting a window on top of 
+all others, easing the X, Y, Width and height of a window into its new location
+and setting the border width.
+.SS OPTIONS
+.TP
+.I "\-display host:number(localhost:0.0)"
+Set the server and display to use. If unspecified, :0.0 is used as the default.
+.TP
+.I "\-id hex(0x00024)"
+Set the window ID to use. (No default)
+.TP
+.I "\-name windowname(xterm)"
+Set the window name to use. (No default)(Will use the first window of that name)
+.TP
+.I "\-pointer"
+Set or show the pointers position.
+.TP
+.I "\-root"
+Set the window to the root window.
+.TP
+.I "\-fullscreen"
+Set the window to fullscreen.
+.TP
+.I "\-set"
+Set the window or pointer.
+.TP
+.I "\-show"
+Set the window or pointer information.
+.TP
+.I "\-hidden"
+Set the window to be hidden.
+.TP
+.I "\-border"
+Set the windows border width in pixels.
+.TP
+.I "\-geometry"
+Set the window or pointers geometry. (WxH+X+Y eg. 800x600+0+0)
+.TP
+.I "\-ease"
+Ease the window into position. ('in','out','io','oi')
+.TP
+.I "\-list"
+List all windows on the given display.
+.TP
+.I "\-top"
+Set the window to be on top of all others.
+.TP
+.I "\-quiet"
+Return only a boolen value of result. ('1' for success, '0' for failure)
+.TP
+.I "\-help"
+Show help (and examples) of how to use this program.
+.TP
+.I "\-v \-\-version"
+Display what version of xlayout this is.
+.SH MORE INFORMATION
+http://freedesktop.org
+http://xlayout.sourceforge.net/
+.SH "AUTHORS"
+Gary Broadbent (gary@plasmaperfect.net)
