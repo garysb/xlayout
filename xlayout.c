@@ -1,6 +1,6 @@
 /* vim: set ts=4 sw=4 nowrap: */
 /*
-Copyright (C) 2004 Plasmaperfect Ltd.
+Copyright (C) 2007 Gary Stidston-Broadbent.
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License

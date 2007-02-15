@@ -9,6 +9,6 @@ make
 #	make install
 #else
 #	echo "I am sorry to say that the program didnt compile for some reason"
-#	echo "Please report this to stroppytux@gmail.com with any additional"
+#	echo "Please report this to gary@stroppytux.net with any additional"
 #	echo "information."
 #fi
