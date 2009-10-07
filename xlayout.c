@@ -1,6 +1,6 @@
 /* vim: set ts=4 sw=4 nowrap: */
 /*
-Copyright (C) 2007 Gary Stidston-Broadbent.
+Copyright (C) 2009 Gary Stidston-Broadbent (gary@stroppytux.net)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -17,639 +17,856 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 */
 
-/******TODO******/
-/* Display a more acurate list of window names */
-/* Display list of screens */
-/* Debug statements */
-/* Valgrind the code */
-
-/* Includes needed (These are limited to core X11 headers) */
+/* Include our header files */
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <getopt.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/cursorfont.h>
 #include <X11/Xmu/WinUtil.h>
-#include <ease.h>
 #include "xlayout.h"
+#include <ease.h>
 
-/* Flags to set state */
-static int verbose_flag;												/* Flag set by `--verbose' */
-static int help_flag;													/* Display help */
-static int version_flag;												/* Display version information */
-static int pointer_flag;												/* Run action on pointer instead of window */
-static int fscreen_flag;												/* Set window fullscreen */
-static int top_flag;													/* Place window on top */
-static int hidden_flag;													/* Set window or pointer to hidden state */
-static int root_flag;													/* Run action on root window */
-static int set_flag;													/* Set the window or pointer */
-static int info_flag;													/* Show information about window or pointer */
-static int show_flag;													/* Show information about window or pointer */
-static int list_flag;													/* Reverse the order of the window list */
-static int reverse_flag;												/* List all windows or screens */
+/* Define program information */
+const char *program				= "xlayout";
+const char *author				= "Gary Stidston-Broadbent";
+const char *contact				= "gary@stroppytux.net";
+const char *version				= "0.8";
+short int verbosity				= 5;
 
-int main(int argc, char **argv)											/* Main function */
+/* Define our global objects */
+XLDisplay d;
+XLPointer p;
+
+/* Execute out main code block */
+int main(int argc, char **argv)
 {
-	/* Preset variables */
-	int c;																/* Option parse counter */
-	unsigned int border;												/* Moves to w->_border */
-	char geometry[20];													/* Moves to p->_geometry or w->_geometry */
-	char display[50];													/* Moves to d->_name */
-	int screen;															/* Moves to d->_screen */
-	char id[20];														/* Moves to w->_id */
-	char name[50];														/* Moves to w->_name */
-	/* Flag settings */
-	verbose_flag	= 0;												/* Disable verbosity */
-	help_flag		= 0;												/* Disable help */
-	version_flag	= 0;												/* Disable version information */
-	pointer_flag	= 0;												/* Disable pointer actions */
-	fscreen_flag	= 0;												/* Set window fullscreen */
-	top_flag		= 0;												/* Set window on top */
-	hidden_flag		= 0;												/* Hide pointer / window */
-	root_flag		= 0;												/* Run actions on root window */
-	set_flag		= 0;												/* Set window or pointer */
-	info_flag		= 0;												/* Show window or pointer information */
-	show_flag		= 0;												/* Show window or pointer information */
-	list_flag		= 0;												/* List windows or screens */
-	reverse_flag	= 0;												/* List windows in reverse */
-	/* Tempory information holders to be moved out */
-	border			= 99999;											/* Set the border to 99999 */
-	strcpy(geometry,"NULL");											/* Set geometry to NULL */
-	strcpy(id,"NULL");													/* Set id to NULL */
-	strcpy(name,"NULL");												/* Set name to NULL */
+	/* Define defaults before we start */
+	d.name						= NULL;
+	d.screen					= 0;
+	d.screen_count				= 0;
+
+	/* Local variables and flags */
+	short int i;
+	int option_index			= 0;
+	char *geometry				= NULL;
+	char *id					= NULL;
+	char *name					= NULL;
+
+	/* Option flags */
+	int help_flag				= 0;
+	int version_flag			= 0;
+	int pointer_flag			= 0;
+	int info_flag				= 0;
+	int set_flag				= 0;
+	int list_flag				= 0;
+	int hide_flag				= 0;
+	int root_flag				= 0;
+	int show_flag				= 0;
+	int top_flag				= 0;
 #ifdef _HAVE_LIBEASE_
-	int sEase;															/* Sets ease type */
-	sEase			= 0;												/* Set sEase to NULL */
+	int ease_flag				= 0;
 #endif
-	/* Setup program information */
-	aInfo a;															/* Create our program holder */
-	strcpy(a._author,"Gary Broadbent");									/* Program Author */
-	strcpy(a._name,argv[0]);											/* Program Name */
-	a._version		= 0.8;												/* Program Version */
+
+	/* Set the options we recognise */
+	struct option long_options[] = {
+		/* Utility actions */
+		{"verbose",		optional_argument,	0,				'v'},
+		{"help",		no_argument,		0,				'h'},
+		{"version",		no_argument,		&version_flag,	1},
+
+		/* Display and screen options */
+		{"display",		required_argument,	0,				'd'},
+		{"screen",		required_argument,	0,				's'},
+
+		/* Window and pointer information */
+		{"pointer",		no_argument,		0,				'p'},
+		{"fullscreen",	no_argument,		0,				'f'},
+		{"top",			no_argument,		0,				't'},
+		{"hide",		no_argument,		0,				'x'},
+		{"root",		no_argument,		&root_flag,		1},
+		{"geometry",	required_argument,	0,				'g'},
+		{"id",			required_argument,	0,				'w'},
+		{"name",		required_argument,	0,				'n'},
+#ifdef _HAVE_LIBEASE_
+		{"ease",		no_argument,		0,				'e'},
+#endif
+		/* Actions */
+		{"set",			no_argument,		0,				'y'},
+		{"info",		no_argument,		0,				'i'},
+		{"show",		no_argument,		0,				'u'},
+		{"list",		no_argument,		0,				'l'},
+		{0, 0, 0, 0}
+	};
+
+	/* Process commandline options */
 	while (1) {
-		/* Start parsing command line options */
-		static struct option long_options[] = {
-			/* These options set a flag. */
-			{"verbose",		no_argument,		&verbose_flag,	1},		/* We want to have verbose output */
-			/* Display Options first */
-			{"display",		required_argument,	0,				'd'},	/* Our display to use */
-			{"screen",		required_argument,	0,				's'},	/* The screen to connect to */
-			/* Information */
-			{"help",		no_argument,		&help_flag,		1},		/* Display help */
-			{"version",		no_argument,		&version_flag,	1},		/* Display version information */
-			/* Window and pointer information */
-			{"pointer",		no_argument,		&pointer_flag,	1},		/* Run actions on pointer, else window */
-			{"fullscreen",	no_argument,		&fscreen_flag,	1},		/* Set window fullscreen */
-			{"top",			no_argument,		&top_flag,		1},		/* Set window on top of all others */
-			{"hidden",		no_argument,		&hidden_flag,	1},		/* Hide window or pointer */
-			{"root",		no_argument,		&root_flag,		1},		/* Run actions on root window */
-			{"geometry",	required_argument,	0,				'g'},	/* geometry (Used for window and pointer) */
-			{"id",			required_argument,	0,				'i'},	/* The window ID */
-			{"name",		required_argument,	0,				'n'},	/* The window name */
-			{"border",		required_argument,	0,				'b'},	/* The window border */
-#ifdef _HAVE_LIBEASE_
-			{"ease",		required_argument,	0,				'e'},	/* Use / set the ease method */
-#endif
-			/* Actions */
-			{"set",			no_argument,		&set_flag,		1},		/* Set window or pointer */
-			{"info",		no_argument,		&info_flag,		1},		/* Show information on window oor pointer */
-			{"show",		no_argument,		&show_flag,		1},		/* Map the window */
-			{"list",		no_argument,		&list_flag,		1},		/* List windows or screens */
-			{"reverse",		no_argument,		&reverse_flag,	1},		/* Reverse our window list */
-			{0, 0, 0, 0}												/* Set to ZERO to detect end */
-		};
-		int option_index = 0;											/* getopt_long stores the option index here. */
-		c = getopt_long(argc, argv, "d:s:g:i:n:b:",
-						long_options, &option_index);
+		/* Get the option variable for this pass */
+		i = getopt_long(argc,argv,"d:s:g:itn:hw:b:vufezpyxl",long_options, &option_index);
+		if (i == -1) {break;}
 
-		/* Detect the end of the options. */
-		if (c == -1) {
-			break;
-		}
 		/* Run actions on our commands passed into the program */
-		switch(c) {
+		switch(i) {
 			case 0:
-			/* If this option set a flag, do nothing else now. */
-			if (long_options[option_index].flag != 0) {
+				/* If this option set a flag, do nothing else now */
+				if (long_options[option_index].flag != 0) {
+					break;
+				}
+				debug(5, "option %s", long_options[option_index].name);
+				if (optarg)
+					debug(5, " with arg %s", optarg);
+				debug(5, "\n");
 				break;
-			}
-			printf ("option %s", long_options[option_index].name);
-			if (optarg)
-				printf (" with arg %s", optarg);
-			printf ("\n");
-			break;
+			/* Set the verbosity */
+			case 'v':
+				if (optarg) {
+					/* If no argument was set, increase the verbosity by one */
+					verbosity = atoi(optarg);
+				} else {
+					verbosity++;
+				}
+				debug(8, "verbosity set to %d\n", verbosity);
+				break;
 
-			case 'd':													/* Set the display */
-				strcpy(display,optarg);									/* Copy from struct to temp name holder */
+			/* Display help information */
+			case 'h':
+				help_flag = 1;
+				break;
+			/* Display information */
+			case 'i':
+				info_flag = 1;
+				break;
+			/* Set information */
+			case 'y':
+				set_flag = 1;
+				break;
+			/* Hide an item */
+			case 'x':
+				hide_flag = 1;
+				break;
+			/* Set an item ontop */
+			case 't':
+				top_flag = 1;
+				break;
+			/* Show an item */
+			case 'u':
+				show_flag = 1;
+				break;
+			/* List windows */
+			case 'l':
+				list_flag = 1;
+				break;
+			/* Set the display */
+			case 'd':
+				debug(8, "Setting display to %s\n", optarg);
+				d.name = optarg;
+				break;
+			/* Toggle actions on pointer instead of window */
+			case 'p':
+				debug(8, "Running actions on pointer\n");
+				pointer_flag = 1;
+				break;
+				/* Set the screen */
+			case 's':
+				debug(8, "Setting screen to %s\n", optarg);
+				d.screen = atoi(optarg);
+				break;
+			/* Set the geometry */
+			case 'g':
+				debug(8, "Setting geometry to %s\n", optarg);
+				geometry = optarg;
+				break;
+			/* Set the geometry to fullscreen */
+			case 'f':
+				debug(8, "Setting geometry to fullscreen\n", optarg);
+				geometry = "fullscreen";
+				break;
+			/* Set the window id */
+			case 'w':
+				debug(8, "Setting window id to %s\n", optarg);
+				id = optarg;
+				break;
+			/* Set the window name */
+			case 'n':
+				debug(8, "Setting window name to %s\n", optarg);
+				name = optarg;
 				break;
 #ifdef _HAVE_LIBEASE_
-			case 'e':													/* Set the ease method */
-				sEase	= *optarg;										/* Copy from struct to temp name holder */
+			/* Enable easing */
+			case 'e':
+				ease_flag = 1;
 				break;
 #endif
-			case 's':													/* Set the screen */
-				screen = atoi(optarg);									/* Copy from struct to temp name holder */
-				break;
-			case 'g':													/* Set the geometry */
-				strcpy(geometry,optarg);								/* Copy from struct to temp name holder */
-				break;
-			case 'i':
-				strcpy(id,optarg);										/* Copy from struct to temp name holder */
-				break;
-			case 'n':
-				strcpy(name,optarg);									/* Copy from struct to temp name holder */
-				break;
-			case 'b':
-				border	= atoi(optarg);									/* Copy the border to temp */
-				break;
 			case '?':
-				/* getopt_long already printed an error message. */
 				break;
 			default:
-				abort();												/* Something went wrong */
+				abort();
 		}
 	}
 
-	/* Display help, then exit */
-	if (help_flag) {
-		usage(&a);														/* Display usage information */
-		exit(0);														/* Exit successfully */
-	}
-	/* Display version, then exit */
-	if (version_flag) {
-		version(&a);													/* Display version information */
-		exit(0);														/* Exit successfully */
-	}
-	/* If we need to do actions on the pointer, do them */
-	if (pointer_flag) {
-		pInfo p;														/* Create a struct for the pointer */
-		dInfo d;														/* Create display information */
-		d._screen = screen;												/* Copy tempory screen to display screen */
-		strcpy(d._name,display);										/* Copy tempory display to main display */
-		createDisplay(&d, &a);											/* Connect to the display */
-		/* We either set or show the pointer */
-		if (info_flag) {
-			/* Open root window */
-			wInfo w;													/* Create connection to window */
-			strcpy(w._id,"0");
-			selWindow(&w,&a,&d);										/* Connect to the root window */
-			/* Show pointer */
-			showPointer(&d,&w);											/* Show pointer information */
-			/* Clear window */
-		} else if (hidden_flag) {
-			setPointerHidden(&d, &p);									/* Hide the pointer */
-		} else if (set_flag) {
-			/* Check to see if we have the geometry set */
-			if (strcmp(geometry,"NULL")) {
-				strcpy(p.setGeometry,geometry);							/* Copy the geometry */
-#ifdef _HAVE_LIBEASE_
-				/* Check if we can ease, ease the pointer into place */
-				if (sEase) {
-					Ease inEase;										/* Create our structure */
-					inEase.type			= IN	;						/* Set our ease type. (IN,OUT,IO,OI,NONE) */
-					inEase.initial		= 0;							/* Set our starting point */
-					inEase.duration		= 50;							/* The quantity of times the easing should take to complete */
-					inEase.difference	= 200;							/* Set the difference (eg.we want to move the object 10 px) */
-					
-				}
-#endif
-				setPointer(&d,&p);										/* Set the pointer */
-			} else {
-				usage(&a);												/* We didnt get a pointer, return usage */
-			}
+	/* Execute our utility actions */
+	(help_flag) ? display_help() : (void)NULL;
+	(version_flag) ? display_version() : (void)NULL;
+
+	/* Create a connection to the display */
+	create_display();
+
+	/* Create a connection to our window if need be */
+	XLWindow w;
+	w.id = NULL;
+	w.name = NULL;
+	if (root_flag || id || name) {
+		/* Choose the window to use */
+		if (root_flag) {
+			debug(8, "Using window id '0'\n");
+			w.id = "0";
+		} else if (id) {
+			debug(8, "Using window id %s\n", id);
+			w.id = id;
+		} else if (name) {
+			debug(8, "Using window name %s\n", name);
+			w.id = "n";
+			w.name = name;
 		}
-		destroyDisplay(&d, &a);											/* Close the connection to the display */
-	} else {															/* We dont use pointer, use window */
-		/* Setup the display */
-		dInfo d;														/* Create display information */
-		d._screen = screen;												/* Copy tempory screen to display screen */
-		strcpy(d._name,display);										/* Copy tempory display to main display */
-		createDisplay(&d, &a);											/* Connect to the display */
-		/* If we used the list flag */
-		if (list_flag) {
-			listWindows(&d);											/* List all our windows */
+	}
+
+	/* Display info about the pointer */
+	if (pointer_flag && info_flag) {
+		display_pointer();
+	}
+
+	/* Set the location of the pointer */
+	else if (pointer_flag && set_flag) {
+		/* First check that the geometry is set */
+		if (!geometry) {
+			display_help();
+			exit(1);
 		} else {
-			/* Setup the window */
-			wInfo w;													/* Create a window struct */
-			/* Choose the window to use */
-			if (root_flag) {
-				strcpy(w._id,"0");										/* Check if we used --root */
-			} else if (strcmp(id,"NULL")) {								/* If not, check if we set an id */
-				strcpy(w._id,id);										/* Copy the window id */
-			} else if (strcmp(name,"NULL")) {							/* else sheck we used a name */
-				strcpy(w._id,id);										/* Copy the window id */
-				strcpy(w._name,name);									/* Copy the window name */
-			}
-			selWindow(&w,&a,&d);										/* Connect to the window */
-			if (info_flag) {
-				showWindow(&a,&d,&w);									/* Show information about a window */
-			} else if (set_flag) {
-				if (hidden_flag) {										/* Set the window to hidden */
-					setWindowHidden(&d, &w);							/* Hide the window */
-				} else if (show_flag) {
-					setWindowVisible(&d, &w);							/* Map the window */
-				} else if (top_flag) {
-					setWindowTop(&d, &w);								/* Place the window ontop of all others */
-				} else {
-					if (strcmp(geometry,"NULL")) {
-						strcpy(w.setGeometry,geometry);					/* Copy the geometry */
-					}
-					if (fscreen_flag) {
-						strcpy(w.setGeometry,"fullscreen");				/* Copy fullscreen */
-					}
-					if (border != 99999) {
-						w.setBorder	= border;							/* Set the new border */
-						setWindowBorder(&d, &w);						/* Set the border */
-					}
-					setWindow(&a, &d, &w);
+			p.new_geometry = geometry;
+#ifdef _HAVE_LIBEASE_
+			if (ease_flag) {
+				/* Get the current pointer position */
+				XLPointer gp;
+				get_pointer(&gp);
+				debug(8, "Current pointer position is x:%d, y:%d\n", gp.x, gp.y);
+
+				/* Get the geometry as x, y coordinates */
+				int x, y, w, h, g;
+				XSizeHints hints = {0};
+				if (!XWMGeometry(d.display, d.screen, geometry, "100x100+100+100", 0, &hints, &x, &y, &w, &h, &g)) {
+					debug(5, "Error getting new geometry (%s)\n", geometry);
+					exit(1);
 				}
+
+				/* Create and populate our easing structure */
+				Ease_Multi e;
+				register int t;
+				for (t=0; t<MULTI_MAX; ++t) e.dimension[t].type = '\0';
+
+				/* Set the callback method */
+				e.fpoint					= ease_pointer;
+
+				/* Set the duration for both x and y to the largest value */
+				int dx						= ((gp.x-x) < 0) ? ((gp.x-x)*-1) : gp.x-x;
+				int dy						= ((gp.y-y) < 0) ? ((gp.y-y)*-1) : gp.y-y;
+				int du						= (dx > dy) ? dx : dy;
+
+				/* X dimension */
+				e.dimension[0].type			= &easeOut;
+				e.dimension[0].initial		= gp.x;
+				e.dimension[0].duration		= du;
+				e.dimension[0].difference	= x-gp.x;
+
+				/* Y dimension */
+				e.dimension[1].type			= &easeIn;
+				e.dimension[1].initial		= gp.y;
+				e.dimension[1].duration		= du;
+				e.dimension[1].difference	= y-gp.y;
+
+				/* Run our ease */
+				ease_multi(&e);
+			} else {
+				set_pointer(geometry);
 			}
+#else
+			set_pointer(geometry);
+#endif
 		}
-		destroyDisplay(&d, &a);											/* Close the connection to the display */
 	}
-	/* Print any remaining command line arguments (not options). */
-	if (optind < argc) {
-		printf ("Please note that the following commands were not recognised: ");
-		while (optind < argc)
-			printf ("%s ", argv[optind++]);
-		putchar ('\n');
+
+	/* Hide the pointer */
+	else if (pointer_flag && hide_flag) {
+		/* Hide the pointer */
+		hide_pointer();
 	}
-	exit (0);
+
+	/* List the windows */
+	else if (list_flag) {
+		list_windows();
+	}
+
+	/* Display information about a window */
+	else if (!pointer_flag && info_flag) {
+		/* Make sure a window was set */
+		(!w.id && !w.name) ? display_help() : (void)NULL;
+
+		/* Create the connection to the window, then display info */
+		create_window(&w);
+		display_window(&w);
+	}
+
+	/* Set the windows geometry */
+	else if (!pointer_flag && set_flag) {
+		/* Make sure a window was set */
+		(!w.id && !w.name && !geometry) ? display_help() : (void)NULL;
+
+		/* Create the connection to the window, then display info */
+		w.new_geometry = geometry;
+		create_window(&w);
+
+#ifdef _HAVE_LIBEASE_
+			if (ease_flag) {
+				/* Get the current window position */
+				XLWindow gw;
+				gw=w;
+				get_window(&gw);
+				debug(8, "Current window dimensions are x:%d, y:%d, w:%d, h:%d\n", gw.x, gw.y, gw.w, gw.h);
+
+				/* Get the geometry as x, y coordinates */
+				int x, y, wi, hi, g;
+				XSizeHints hints = {0};
+				if (!XWMGeometry(d.display, d.screen, geometry, "100x100+100+100", 0, &hints, &x, &y, &wi, &hi, &g)) {
+					debug(5, "Error getting new geometry (%s)\n", geometry);
+					exit(1);
+				}
+
+				/* Create and populate our easing structure */
+				Ease_Multi e;
+				register int t;
+				for (t=0; t<MULTI_MAX; ++t) e.dimension[t].type = '\0';
+
+				/* Set the callback method */
+				e.fpoint					= ease_window;
+
+				/* Set the duration for both x and y to the largest value */
+				int dx						= ((gw.x-x) < 0) ? ((gw.x-x)*-1) : gw.x-x;
+				int dy						= ((gw.y-y) < 0) ? ((gw.y-y)*-1) : gw.y-y;
+				int du						= (dx > dy) ? dx : dy;
+
+				/* Set the duration for both w and h to the largest value */
+				int dw						= ((gw.w-wi) < 0) ? ((gw.w-wi)*-1) : gw.w-wi;
+				int dh						= ((gw.h-hi) < 0) ? ((gw.h-hi)*-1) : gw.h-hi;
+				int ds						= (dw > dh) ? dw : dh;
+
+				/* X dimension */
+				e.dimension[0].type			= &easeOut;
+				e.dimension[0].initial		= gw.x;
+				e.dimension[0].duration		= du;
+				e.dimension[0].difference	= x-gw.x;
+
+				/* Y dimension */
+				e.dimension[1].type			= &easeIn;
+				e.dimension[1].initial		= gw.y;
+				e.dimension[1].duration		= du;
+				e.dimension[1].difference	= y-gw.y;
+
+				/* W dimension */
+				e.dimension[2].type			= &easeOut;
+				e.dimension[2].initial		= gw.w;
+				e.dimension[2].duration		= ds;
+				e.dimension[2].difference	= wi-gw.w;
+
+				/* H dimension */
+				e.dimension[3].type			= &easeIn;
+				e.dimension[3].initial		= gw.h;
+				e.dimension[3].duration		= ds;
+				e.dimension[3].difference	= hi-gw.h;
+
+				debug(10, "du:%d, xi:%d, xd:%d\n", du, e.dimension[0].initial, e.dimension[0].difference);
+				debug(10, "du:%d, yi:%d, yd:%d\n", du, e.dimension[1].initial, e.dimension[1].difference);
+				debug(10, "ds:%d, wi:%d, wd:%d\n", ds, e.dimension[2].initial, e.dimension[2].difference);
+				debug(10, "ds:%d, hi:%d, hd:%d\n", ds, e.dimension[3].initial, e.dimension[3].difference);
+
+				/* Run our ease */
+				ease_multi(&e, w);
+			} else {
+				set_window(&w);
+			}
+#else
+		set_window(&w);
+#endif
+	}
+
+	/* Hide the window */
+	else if (!pointer_flag && hide_flag) {
+		/* Make sure a window was set */
+		(!w.id && !w.name) ? display_help() : (void)NULL;
+
+		/* Create the connection to the window, then hide it */
+		create_window(&w);
+		hide_window(&w);
+	}
+
+	/* Show the window */
+	else if (!pointer_flag && show_flag) {
+		/* Make sure a window was set */
+		(!w.id && !w.name) ? display_help() : (void)NULL;
+
+		/* Create the connection to the window, then show it */
+		create_window(&w);
+		show_window(&w);
+	}
+
+	/* Set the window on top of all others */
+	else if (!pointer_flag && top_flag) {
+		/* Make sure a window was set */
+		(!w.id && !w.name) ? display_help() : (void)NULL;
+
+		/* Create the connection to the window, then set it ontop */
+		create_window(&w);
+		top_window(&w);
+	}
+
+	/* Close the connection to the display */
+	destroy_display();
+	exit(0);
+}
+
+/* Display information to the user if the information level is low enough */
+void debug(short int level, char *msg, ...)
+{
+	/* Use va_list to get variadic options */
+	va_list fmtargs;
+	char buffer[1024];
+	va_start(fmtargs,msg);
+	vsnprintf(buffer,sizeof(buffer)-1,msg,fmtargs);
+	va_end(fmtargs);
+
+	/* Check the level is less than the verbosity level */
+	if (level <= verbosity) {
+		printf("%s",buffer);
+	}
 }
 
 /* Display program version information */
-void version(aInfo *a)												/* Display version information */
+void display_version()
 {
-	printf ("XLayout version %1.1f\n", a->_version);				/* Display the version number */
-	printf ("Developed by %s\n", a->_author);						/* Display the author, ME! ;-) */
-	putchar('\n');													/* Make our output tidy */
-	exit(0);														/* Exit with success */
-}
-/* Display program usage information */
-void usage(aInfo *a)												/* Display usage options */
-{
-	printf ("usage:  %s [-options ...]\n\n", a->_name);
-	printf ("where options include:\n");
-	printf ("    --version            Print the version\n");
-	printf ("    --help               Print this message\n");
-	printf ("    --list type          List either 'screens' or 'windows'\n");
-	printf ("    --info               Display window information\n");
-	printf ("    --set                Set window information\n");
-	printf ("    --display host:dpy   X server to contact\n");
-	printf ("    --root               Use the root window\n");
-	printf ("    --id windowid        Use the window with the specified id\n");
-	printf ("    --name windowname    Use the window with the specified name\n");
-	printf ("    --pointer            Set/show the pointer instead of a window\n");
-	printf ("    --geometry           Set the geometry of the id/name/pointer\n");
-	printf ("    --fullscreen         Set window to fullscreen\n");
-	printf ("    --border             Set window border in px\n");
-	printf ("    --top                Set window to display on the top of all others\n");
-	printf ("    --hidden             Hide the window or pointer\n");
-	printf ("    --show               Unhide the window or pointer\n");
-	printf ("    --verbose            Increase the verbosity of the output\n");
-#ifdef _HAVE_LIBEASE_
-	printf ("    --ease               Set ease method, can be 'in','out','io','oi'\n");
-#endif
-	printf ("    --reverse            If several windows match the name given with --name,\n");
-	printf ("                         the default behavior is to select the bottom-most.\n");
-	printf ("                         Use this option to select the top-most instead.\n");
-	printf ("\n");
-	printf ("examples:\n");
-	printf ("    List windows:  xlayout --display :1.0 --list windows\n");
-	printf ("    Show win info: xlayout --display :0.0 --show --id 0xa00001\n");
-	printf ("                   xlayout --info --name \"www.google.co.uk - Mozilla Firefox\"\n");
-	printf ("    Set window:    xlayout --set --name MPlayer --fullscreen\n");
-#ifdef _HAVE_LIBEASE_
-	printf ("                   xlayout --set --id 0x200034 --geometry 100x100-0-0 --ease oi\n");
-#endif
-	printf ("                   xlayout --set --name MPlayer --hidden\n");
-	printf ("                   xlayout --set --display domain.com:0.0 --name MPlayer --top\n");
-	printf ("    Show pointer:  xlayout --info --pointer --display :0.0\n");
-	printf ("    Set pointer:   xlayout --set --pointer --geometry 0x0+100+100\n");
-	printf ("\n");
+	debug(5, "%s ", program);
+	debug(1, "%s\n", version);
+	debug(5, "Copyright (C) 2009 %s\n", author);
+	debug(5, "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>\n");
+	debug(5, "This is free software: you are free to change and redistribute it.\n");
+	debug(5, "There is NO WARRANTY, to the extent permitted by law.\n");
+	debug(5, "\nWritten by %s\n", author);
 	exit(0);
 }
-/* Create a connection to our display and screen */
-void createDisplay(dInfo *d, aInfo *a)								/* Setup the display connection */
+
+/* Display program help information */
+void display_help()
 {
-	if ((d->_display = XOpenDisplay(d->_name)) == NULL) {
-		if (verbose_flag) {											/* If we need to display an error */
-			printf ("%s: Unable to open display '%s'\n",
-			a->_name, XDisplayName(d->_name));
-		}
-		exit(1);													/* Clean exit out of program */
-	}
-	d->_screen = DefaultScreen(d->_display);						/* Set the default screen(0) */
-	return;															/* Return to main function */
-}
-/* Create a connection to our display and screen */
-void destroyDisplay(dInfo *d, aInfo *a)								/* Setup the display connection */
-{
-	XFlush(d->_display);											/* Flush the display */
-	XCloseDisplay(d->_display);										/* Now close the connection */
-	return;															/* Return to main function */
-}
-/* Return the quantity of screens attached to the X server */
-void listScreens(dInfo *d)											/* List all screens */
-{
-	d->_screenCount	= XScreenCount(d->_display);					/* Get the screen list */
-	printf("There are %d screens.\n",d->_screenCount);				/* Print the result */
+	debug(5, "usage:  %s [-options ...]\n\n", program);
+	debug(5, "where options include:\n");
+	debug(5, "    --version            Print the version\n");
+	debug(5, "    --help               Print this message\n");
+	debug(5, "    --list type          List either 'screens' or 'windows'\n");
+	debug(5, "    --info               Display window information\n");
+	debug(5, "    --set                Set window information\n");
+	debug(5, "    --display host:dpy   X server to contact\n");
+	debug(5, "    --root               Use the root window\n");
+	debug(5, "    --id windowid        Use the window with the specified id\n");
+	debug(5, "    --name windowname    Use the window with the specified name\n");
+	debug(5, "    --pointer            Set/show the pointer instead of a window\n");
+	debug(5, "    --geometry           Set the geometry of the id/name/pointer\n");
+	debug(5, "    --fullscreen         Set window to fullscreen\n");
+	debug(5, "    --top                Set window to display on the top of all others\n");
+	debug(5, "    --hidden             Hide the window or pointer\n");
+	debug(5, "    --show               Unhide the window or pointer\n");
+	debug(5, "    --verbose            Increase the verbosity of the output\n");
+	debug(5, "\n");
+	debug(5, "examples:\n");
+	debug(5, "    List windows:  xlayout --display :1.0 --list windows\n");
+	debug(5, "    Show win info: xlayout --display :0.0 --show --id 0xa00001\n");
+	debug(5, "                   xlayout --info --name \"www.google.co.uk - Mozilla Firefox\"\n");
+	debug(5, "    Set window:    xlayout --set --name MPlayer --fullscreen\n");
+	debug(5, "                   xlayout --name MPlayer --hidden\n");
+	debug(5, "                   xlayout --display domain.com:0.0 --name MPlayer --top\n");
+	debug(5, "    Show pointer:  xlayout --info --pointer --display :0.0\n");
+	debug(5, "    Set pointer:   xlayout --set --pointer --geometry 0x0+100+100\n");
+	debug(5, "\n");
+	exit(0);
 }
 
-/* Create a connection to a window */
-void selWindow(wInfo *w, aInfo *a, dInfo *d)						/* Select the window to show/set */
+/****************************************************************************/
+/* Display functions														*/
+/****************************************************************************/
+/* Create a connection to our display and screen */
+int create_display()
 {
-	if (!strcmp(w->_id, "0")) {										/* If the windowId has been set to 0 */
-		w->_window = 0;
-		w->_window=RootWindow(d->_display,d->_screen);				/* Set win to root window */
-		return;														/* Return to Main function */
+	/* Try open a connection to the display */
+	if ((d.display = XOpenDisplay(d.name)) == NULL) {
+		debug(5, "Unable to open display '%s'\n", XDisplayName(d.name));
+		exit(1);
 	}
-	if (strcmp(w->_id, "NULL")) {									/* If the windowId has been set */
-		w->_window = 0;												/* Blank the window */
-		sscanf(w->_id, "0x%lx", &w->_window);						/* Check the format is correct */
-		if (!w->_window)											/* If not */
-			sscanf(w->_id, "%ld", &w->_window);						/* Try different format */
-		if (!w->_window) {											/* If still not */
-			if (verbose_flag) {										/* If we need verbose output */
-				printf("Invalid window id format: %s.\n",			/* Print an error message saying invalid id */
-				w->_id);
-			}
-			exit(1);												/* Exit program */
-		} else {
-			w->_window = XmuClientWindow(d->_display, w->_window);
-			return;													/* Else exit function */
-		}
-	}
-	if (strcmp(w->_name, "NULL")) {									/* If -name was set */
-		Window top;													/* Create reference to root window */
-		char winName[50];											/* Create a tempory name holder */
-		char tmpId[20];												/* Used to display id at end */
-		strcpy(winName,w->_name);									/* Copy from struct to temp name holder */
-		top = RootWindow(d->_display,d->_screen);					/* Set top to the root of the display */
-		w->_window = selWindowNamed(d,winName,top);					/* Set win to the id returned by selWindowNamed */
-		sprintf(tmpId, "0x%lx", w->_window);						/* Convert from dec to hex */
-		strcpy(w->_id,tmpId);										/* Copy to pS struct */
-	}
-	if (!w->_window) {												/* If win still doesnt exist */
-		if (verbose_flag) {											/* If we should display our error */
-			printf("There was an error selecting the window!\n");
-		}
-		exit(1);													/* Exit the program */
-	}
-	return;															/* Return to main */
+
+	/* Set the default screen to use "screen(0)" */
+	debug(10, "Setting default screen for %s\n", d.name);
+	d.screen = DefaultScreen(d.display);
+	return (0);
 }
-/* Select a window by the window name */
-Window selWindowNamed(dInfo *d, char winsName[50], Window top)		/* Select a window with a -name */
+
+/* Destroy the connection to the display */
+int destroy_display()
 {
-	Window *children, dummy;										/* Set tempory holders */
-	unsigned int nchildren;											/* Set integer holders */
-	register int j;													/* Store a non memory int */
-	char *window_name;												/* Create a return char */
-	if (XFetchName(d->_display, top, &window_name) && strcmp(window_name, winsName) == 0) {
-	  return(top);													/* Return the root window */
-	}
-	if (!XQueryTree(d->_display, top, &dummy, &dummy, &children, &nchildren)) {
-		return(0);													/* Return no window */
-	}
-	/* Return results on creation order */
-	if(!reverse_flag) {
-		for (j=0; j<nchildren; j++) {								/* Run loop of windows/children */
-			top = selWindowNamed(d,winsName,children[j]);			/* Recall this function (LOOP) */
-			if (top)												/* If it finds the win */
-			  break;												/* Break the loop */
-		}
-	/* Return the results from newest to oldest creation */
-	} else {
-		for (j=nchildren-1; j >= 0; j--) {							/* Run loop of windows/children */
-			top = selWindowNamed(d,winsName,children[j]);			/* Recall this function (LOOP) */
-			if (top)												/* If it finds the win */
-				break;												/* Break the loop */
-		}
-	}
-	if (children) XFree ((char *)children);							/* Clear up our mess */
-	return(top);													/* Return the window id */
+	debug(10, "Destroying display %s\n", d.name);
+	/* First flush the display to make sure our actions have been committed */
+	XFlush(d.display);
+	XCloseDisplay(d.display);
+	return(0);
 }
-/* Return a list of the windows on the X11 server */
-void listWindows(dInfo *d)											/* List all windows */
+
+/* Return the quantity of screens attached to the X server */
+int count_screens()
 {
-	Window *children, dummy;										/* Set tempory holders */
-	unsigned int nchildren;											/* Set integer holders */
-	register int k;													/* Store a non memory int */
-	XQueryTree(d->_display,											/* Query tree from root window */
-		RootWindow(d->_display,d->_screen),
-		&dummy,
-		&dummy,
-		&children,
-		&nchildren);
-	if (verbose_flag) {
-		printf("ID			NAME\n\n");								/* Print out heading */
-	}
-/*FIXME*/
-//	if (1) {														/* Check if we want the wm name */
-//		XTextProperty tmpName;										/* Create a text property */
-//		for (k=0; k<nchildren; k++) {								/* Run loop of windows/children */
-//			printf("0x%lx",children[k]);							/* Print out the window id */
-//			tmpName.value = NULL;									/* Clear out the name */
-//			XGetWMName(d->_display, children[k], &tmpName);				/* Fetch the tempory name */
-//			if ( tmpName.value ) {									/* If a name has been set */
-//				printf("		%s\n",tmpName.value);				/* Copy temp name to perm name */
-//			} else {												/* Else set name */
-//				printf("		Not Available\n");					/* Copy temp name to perm name */
-//			}
-//		}
-//	} else {
-		if (!reverse_flag) {
-			char *tmpName;											/* Tempory name before copied to pS->windowName */
-			for (k=0; k<nchildren; k++) {							/* Run loop of windows/children */
-				tmpName = NULL;										/* Clear out the name */
-				XFetchName(d->_display, children[k], &tmpName);		/* Fetch the tempory name */
-				if (tmpName) {										/* If a name has been set */
-					printf("0x%lx",children[k]);					/* Print out the window id */
-					printf("		%s\n",tmpName);					/* Copy temp name to perm name */
-				} else {											/* Else set name */
-					if (verbose_flag) {
-						printf("0x%lx",children[k]);				/* Print out the window id */
-						printf("		Not Available\n");			/* Copy temp name to perm name */
-					}
-				}
-			}
-		} else {
-			char *tmpName;											/* Tempory name before copied to pS->windowName */
-			for (k=nchildren-1; k>=0; k--) {						/* Run loop of windows/children */
-				tmpName = NULL;										/* Clear out the name */
-				XFetchName(d->_display, children[k], &tmpName);		/* Fetch the tempory name */
-				if (tmpName) {										/* If a name has been set */
-					printf("0x%lx",children[k]);					/* Print out the window id */
-					printf("		%s\n",tmpName);					/* Copy temp name to perm name */
-				} else {											/* Else set name */
-					if (verbose_flag) {
-						printf("0x%lx",children[k]);				/* Print out the window id */
-						printf("		Not Available\n");			/* Copy temp name to perm name */
-					}
-				}
-			}
-		}
-//	}
+	d.screen_count	= XScreenCount(d.display);
+	debug(5, "There are ");
+	debug(1, "%d", d.screen_count);
+	debug(5, "screens\n");
+	return(0);
 }
-/* Show information about a window */
-void showWindow(aInfo *a, dInfo *d, wInfo *w)						/* Just show window information */
+
+/****************************************************************************/
+/* Pointer functions														*/
+/****************************************************************************/
+/* Display information about the pointer */
+void display_pointer()
 {
-	char *tmpName;													/* Tempory name before copied to pS->windowName */
-	XFetchName(d->_display, w->_window, &tmpName);					/* Fetch the tempory name */
-    XWindowAttributes winAttribs;									/* define struct */
-	if ( XGetWindowAttributes(d->_display,w->_window,&winAttribs) == 0) {
-		if (verbose_flag) {											/* If -quiet called use int to display error */
-			printf("%s: failed to get window attributes\n",a->_name);
-		}
-		exit(1);													/* Break out of program */
-	}
-	if ( tmpName ) {												/* If a name has been set */
-		strcpy(w->_name,tmpName);									/* Copy temp name to perm name */
-	} else {														/* Else set name */
-		strcpy(w->_name, "Root");									/* pS->windowname to Root window */
-	}
-	w->_x		 		= winAttribs.x;								/* Store the X value */
-	w->_y		 		= winAttribs.y;								/* Store the Y value */
-	w->_w		 		= winAttribs.width;							/* Store the Width value */
-	w->_h		 		= winAttribs.height;						/* Store the Height value */
-	w->_border			= winAttribs.border_width;					/* Store the border width */
-	printf("Window Name:   %s\n",w->_name);							/* Print out the window name */
-	printf("Window Id:     %s\n", w->_id);							/* Print the ID chosen */
-	printf("geometry:      %dx%d+%d+%d\n",							/* Print the 'geometry */
-		w->_w,
-		w->_h,
-		w->_x,
-		w->_y);
-	printf("X Position:    %d\n",w->_x);							/* Print out the X value */
-	printf("Y Position:    %d\n",w->_y);							/* Print out the Y value */
-	printf("Window Width:  %d\n",w->_w);							/* Print out the width */
-	printf("Window Height: %d\n",w->_h);							/* Print out the height */
-	printf("Border Width:  %d\n",w->_border);						/* Print out the height */
-	return;															/* return to main function */
+	/* Create a connection to the root window */
+	XLWindow w;
+	w.id = "0";
+	create_window(&w);
+	int x, y, dummy;
+	unsigned int mask;
+
+	/* Call XQueryPointer to get the resulting x and y coordinates */
+	debug(10, "Getting pointer coordinates\n", d.name);
+	XQueryPointer(d.display, w.window, &w.window, &w.window, &x, &y, &dummy, &dummy, &mask);
+	debug(5, "X Position: ");
+	debug(1, "%d\n", x);
+	debug(5, "Y Position: ");
+	debug(1, "%d\n", y);
 }
-/* Map the window for view */
-void setWindowVisible(dInfo *d, wInfo *w)
+
+/* Get the pointer information */
+void get_pointer(XLPointer *gp)
 {
-	XMapWindow(d->_display,w->_window);								/* Map the window */
-	XRaiseWindow(d->_display,w->_window);							/* Place the window ontop of all others */
-	return;
+	/* Create a connection to the root window */
+	XLWindow w;
+	w.id = "0";
+	create_window(&w);
+	int x, y, dummy;
+	unsigned int mask;
+
+	/* Call XQueryPointer to get the resulting x and y coordinates */
+	debug(10, "Getting pointer coordinates\n");
+	XQueryPointer(d.display, w.window, &w.window, &w.window, &x, &y, &dummy, &dummy, &mask);
+	gp->x = x;
+	gp->y = y;
 }
-/* Set window ontop of all others */
-void setWindowTop(dInfo *d, wInfo *w)
-{
-	XMapWindow(d->_display,w->_window);								/* First make sure the window is mapped */
-	XRaiseWindow(d->_display,w->_window);							/* Raise the window to the top */
-	return;
-}
-/* Hide the window from view */
-void setWindowHidden(dInfo *d, wInfo *w)
-{
-	XUnmapWindow(d->_display,w->_window);							/* Hide the window */
-	return;
-}
-/* Set the window border */
-void setWindowBorder(dInfo *d, wInfo *w)
-{
-	XSetWindowBorderWidth(d->_display, w->_window,					/* Set the border width */
-		w->setBorder);
-	w->_border = w->setBorder;										/* Copy the new value into our struct */
-	return;
-}
-/* Set the window position */
-void setWindow(aInfo *a, dInfo *d, wInfo *w)						/* Set the window information */
-{
-	int rx, ry, rw, rh, rg;											/* Set some ints for return of XWMGeometry */
-	XSizeHints hints = {0};											/* Set some hint defaults */
-	if (strcmp(w->setGeometry, "fullscreen")) {						/* If -fullscreen wasn't entered */
-		XWMGeometry(d->_display, d->_screen,						/* Get info from -geometry */
-					w->setGeometry, "200x200+0+0",
-					0, &hints, &rx, &ry, &rw, &rh, &rg);
-	} else {														/* No -fullscreen */
-		XWindowAttributes rootWinAttribs;							/* Define root struct */
-		if ( XGetWindowAttributes(d->_display,						/* Get info from root window */
-				RootWindow(d->_display,d->_screen),
-				&rootWinAttribs) == 0) {							/* There was an error */
-			if (verbose_flag) {										/* If -quiet called use int to display error */
-				printf("%s: failed to get window attributes\n",a->_name);
-			}
-			exit(1);												/* Break out of program */
-		}
-		rx 	= rootWinAttribs.x;										/* Store the X value */
-		ry 	= rootWinAttribs.y;										/* Store the Y value */
-		rw 	= rootWinAttribs.width;									/* Store the Width value */
-		rh 	= rootWinAttribs.height;								/* Store the Height value */
-	}
-	w->_x = rx;														/* Copy new X to struct */
-	w->_y = ry;														/* Copy new Y to struct */
-	w->_w = rw;														/* Copy new W to struct */
-	w->_h = rh;														/* Copy new H to struct */
-	XMoveResizeWindow(d->_display, w->_window,						/* Resize and move window */
-		w->_x,
-		w->_y,
-		w->_w,
-		w->_h);
-	return;															/* Return to Main function */
-}
-/* Output information about the pointer */
-void showPointer(dInfo *d, wInfo *w)								/* Show pointer information */
-{
-	int x, y, dummy;												/* X and Y and a dummy for crap */
-	XQueryPointer (d->_display,										/* Return results of pointer */
-		w->_window,
-		&w->_window,
-		&w->_window,
-		&x, &y, &dummy, &dummy, &dummy);
-	printf ("Pointer coordinates\n");								/* Header */
-	printf ("X Position: %d\n", x);									/* X Coords */
-	printf ("Y Position: %d\n", y);									/* Y Coords */
-	return;															/* Exit function */
-}
-/* Hide the pointer */
-void setPointerHidden(dInfo *d, pInfo *p)
-{
-	p->_pix = XCreatePixmap(
-		d->_display,
-		DefaultRootWindow(d->_display),
-		1,
-		1,
-		1);
-	p->_colour.pixel = 0;
-	p->_colour.red = 0;
-	p->_colour.green = 0;
-	p->_colour.blue = 0;
-	p->_colour.flags = 0;
-	p->_colour.pad = 0;
-	p->_blank = XCreatePixmapCursor(
-		d->_display,
-		p->_pix,
-		p->_pix,
-		&p->_colour,
-		&p->_colour,
-		1,
-		1);
-	XDefineCursor(d->_display,
-		DefaultRootWindow(d->_display),
-		p->_blank);
-	XFlush(d->_display);
-	return;
-}
+
 /* Set the location of the pointer */
-void setPointer(dInfo *d, pInfo *p)										/* Set the pointer location */
+void set_pointer(char *geometry)
 {
-	Window top;															/* Create a blank window */
-	int x, y, w, h, g;													/* Set some ints for return of XWMGeometry */
-	top = 0;															/* Blank win */
-	top = DefaultRootWindow(d->_display);								/* Set win for pointer dpy */
-	XSizeHints hints = {0};												/* Set some hint defaults */
-	XWMGeometry(d->_display, d->_screen,								/* Get info from -geometry */
-		p->setGeometry, "100x100+0+0",
-		0, &hints, &x, &y, &w, &h, &g);
-	p->_x = x;															/* Copy new X to struct */
-	p->_y = y;															/* Copy new Y to struct */
-	XWarpPointer(d->_display, top, top,									/* Set pointer position */
-		0, 0, 0, 0, x, y);
-	XFlush(d->_display);												/* Flush the display to make the changes take affect */
+	/* Create a connection to the root window */
+	XLWindow root;
+	root.window = 0;
+	root.id = "0";
+	create_window(&root);
+	int x, y, w, h, g;
+
+	/* Set the pointer location */
+	debug(10, "Setting pointer coordinates to ");
+	debug(8, "%s\n", geometry);
+	XSizeHints hints = {0};
+	if (!XWMGeometry(d.display, d.screen, geometry, "100x100+100+100", 0, &hints, &x, &y, &w, &h, &g)) {
+		debug(5, "Error setting WMGeometry\n");
+		exit(1);
+	}
+
+	/* Now move the pointer into place */
+	if (!XWarpPointer(d.display, root.window, root.window, 0, 0, 0, 0, x, y)) {
+		debug(5, "Error setting pointer\n");
+		exit(1);
+	}
+}
+
+#ifdef _HAVE_LIBEASE_
+/* Callback to set the pointer for easing */
+int ease_pointer(Ease_Multi *e, va_list ap)
+{
+	char geometry[20];
+	sprintf(geometry, "0x0+%d+%d", e->dimension[0].value, e->dimension[1].value);
+	/* Set the pointer to the new geometry */
+	usleep(10000);
+	set_pointer(geometry);
+	XFlush(d.display);
+	return 0;
+}
+#endif
+
+/* Hide the pointer */
+void hide_pointer()
+{
+	/* Creating a new single pixel image for the pointer */
+	debug(5, "Setting the pointer to hidden\n");
+	p.pix = XCreatePixmap(d.display, DefaultRootWindow(d.display), 1, 1, 1);
+	p.colour.pixel = 0;
+	p.colour.red = 0;
+	p.colour.green = 0;
+	p.colour.blue = 0;
+	p.colour.flags = 0;
+	p.colour.pad = 0;
+
+	/* Assign the pixel to the cursor */
+	p.blank = XCreatePixmapCursor(d.display, p.pix, p.pix, &p.colour, &p.colour, 1, 1);
+	XDefineCursor(d.display, DefaultRootWindow(d.display), p.blank);
+	XFlush(d.display);
+	return;
+}
+
+/****************************************************************************/
+/* Window functions															*/
+/****************************************************************************/
+/* Create a connection to the window */
+void create_window(XLWindow *w)
+{
+	/* Check if we are trying to connect to the root window */
+	if (!strcmp(w->id, "0")) {
+		debug(8, "Creating connection to root window (%s)\n", w->id);
+		w->window = 0;
+		w->window = RootWindow(d.display,d.screen);
+		return;
+	}
+
+	/* Set the window using an id */
+	if (w->id && strcmp(w->id, "n")) {
+		debug(8, "Creating connection to window %s\n", w->id);
+		w->window = 0;
+
+		/* First try with a hex format */
+		debug(10, "Trying %s with hex format\n", w->id);
+		sscanf(w->id, "0x%lx", &w->window);
+
+		/* If that didnt work try with a decimal format */
+		if (!w->window) {
+			debug(10, "Trying %s with decimal format\n", w->id);
+			sscanf(w->id, "%ld", &w->window);
+		}
+		if (!w->window) {
+			debug(5, "Invalid window id format: %s.\n", w->id);
+			exit(1);
+		} else {
+			debug(10, "Window id (%s) set, now connecting\n", w->id);
+			w->window = XmuClientWindow(d.display, w->window);
+			return;
+		}
+	}
+
+	/* Set the window using the window name */
+	if (strcmp(w->name, "NULL")) {
+		debug(8, "Trying to connect to window named %s\n", w->name);
+		Window root;
+		char *name;
+		char *tmp_id;
+		name = w->name;
+		root = RootWindow(d.display,d.screen);
+		w->window = create_window_named(name, root);
+		sprintf(tmp_id, "0x%lx", w->window);
+		w->id = tmp_id;
+	}
+
+	/* We cant set the window, return an error */
+	if (!w->window) {
+		debug(5, "There was an error selecting the window!\n");
+		exit(1);
+	}
+	return;
+}
+
+/* Select a window by the window name */
+Window create_window_named(char *winsName, Window root)
+{
+	debug(8, "Connection to window %s\n", winsName);
+	Window *children, dummy;
+	unsigned int child_count;
+	char *window_name;
+	if (XFetchName(d.display, root, &window_name) && strcmp(window_name, winsName) == 0) {
+	  return(root);
+	}
+	if (!XQueryTree(d.display, root, &dummy, &dummy, &children, &child_count)) {
+		return(0);
+	}
+
+	while (child_count--) {
+		root = create_window_named(winsName,children[child_count]);
+		if (root)
+			break;
+	}
+
+	if (children) XFree ((char *)children);
+	return(root);
+}
+
+/* Map the window for view */
+void show_window(XLWindow *w)
+{
+	XMapWindow(d.display, w->window);
+	XRaiseWindow(d.display, w->window);
+	return;
+}
+
+/* Hide the window from view */
+void hide_window(XLWindow *w)
+{
+	XUnmapWindow(d.display,w->window);
+	return;
+}
+
+/* Set window ontop of all others */
+void top_window(XLWindow *w)
+{
+	XMapWindow(d.display, w->window);
+	XRaiseWindow(d.display, w->window);
+	return;
+}
+
+/* Set the window border */
+void window_border(XLWindow *w)
+{
+	XSetWindowBorderWidth(d.display, w->window, w->new_border);
+	w->border = w->new_border;
+	return;
+}
+
+/* Get the window information */
+void get_window(XLWindow *gw)
+{
+	XWindowAttributes winAttribs;
+	if (XGetWindowAttributes(d.display, gw->window, &winAttribs) == 0) {
+		debug(5, "failed to get window attributes\n");
+		exit(1);
+	}
+
+	/* Set our windows attributes to those returned */
+	gw->x		 		= winAttribs.x;
+	gw->y		 		= winAttribs.y;
+	gw->w		 		= winAttribs.width;
+	gw->h		 		= winAttribs.height;
+	gw->border			= winAttribs.border_width;
+}
+
+/* Set the window position */
+void set_window(XLWindow *w)
+{
+	debug(8, "Setting window to %s\n", w->new_geometry);
+	int rx, ry, rw, rh, rg;
+	XSizeHints hints = {0};
+	if (strcmp(w->new_geometry, "fullscreen")) {
+		XWMGeometry(d.display, d.screen, w->new_geometry, "200x200+0+0", 0, &hints, &rx, &ry, &rw, &rh, &rg);
+	} else {
+		XWindowAttributes rootWinAttribs;
+		if (XGetWindowAttributes(d.display, RootWindow(d.display,d.screen), &rootWinAttribs) == 0) {
+			printf("Failed to get window attributes\n");
+			exit(1);
+		}
+		rx 	= rootWinAttribs.x;
+		ry 	= rootWinAttribs.y;
+		rw 	= rootWinAttribs.width;
+		rh 	= rootWinAttribs.height;
+	}
+
+	w->x = rx;
+	w->y = ry;
+	w->w = rw;
+	w->h = rh;
+	XMoveResizeWindow(d.display, w->window, w->x, w->y, w->w, w->h);
+	return;
+}
+
+#ifdef _HAVE_LIBEASE_
+/* Callback to set the window for easing */
+int ease_window(Ease_Multi *e, va_list ap)
+{
+	char geometry[20];
+	XLWindow w;
+	w = va_arg(ap, XLWindow);
+
+	sprintf(geometry, "%dx%d+%d+%d", e->dimension[2].value, e->dimension[3].value, e->dimension[0].value, e->dimension[1].value);
+	usleep(1000);
+
+	/* Set the window to the new geometry */
+	w.new_geometry = geometry;
+	set_window(&w);
+	XFlush(d.display);
+	return 0;
+}
+#endif
+
+/* Return a list of the windows on the X11 server */
+void list_windows()
+{
+	Window *children, dummy, root;
+	root = RootWindow(d.display,d.screen);
+	unsigned int child_count;
+	XQueryTree(d.display, root, &dummy, &dummy, &children, &child_count);
+	debug(5, "ID			NAME\n\n");
+
+	char *tmp_name;
+	while (child_count--) {
+		tmp_name = NULL;
+		XFetchName(d.display, children[child_count], &tmp_name);
+		debug(5, "0x%lx",children[child_count]);
+		tmp_name ? debug(5, "\t\t%s\n",tmp_name) : debug(5, "\t\tNA\n");
+	}
+}
+
+/* Show information about a window */
+void display_window(XLWindow *w)
+{
+	/* Fetch the windows name */
+	debug(8, "Fetching windows name for %s\n", w->id);
+	char *tmp_name;
+	XFetchName(d.display, w->window, &tmp_name);
+	w->name = (tmp_name) ? tmp_name : "Root";
+	debug(8, "Windows name returned %s\n", w->name);
+
+	/* Fetch the windows attributes */
+	debug(8, "Fetching windows attributes for %s\n", w->id);
+	XWindowAttributes winAttribs;
+	if (XGetWindowAttributes(d.display,w->window,&winAttribs) == 0) {
+		debug(5, "failed to get window attributes\n");
+		exit(1);
+	}
+
+	/* Set our windows attributes to those returned */
+	w->x		 		= winAttribs.x;
+	w->y		 		= winAttribs.y;
+	w->w		 		= winAttribs.width;
+	w->h		 		= winAttribs.height;
+	w->border			= winAttribs.border_width;
+
+	/* Display the info to the user */
+	debug(5, "Window Name:   %s\n",w->name);
+	debug(5, "Window Id:     %s\n", w->id);
+	debug(5, "geometry:      ");
+	debug(1, "%dx%d+%d+%d\n", w->w, w->h, w->x, w->y);
+	debug(5, "X Position:    %d\n",w->x);
+	debug(5, "Y Position:    %d\n",w->y);
+	debug(5, "Window Width:  %d\n",w->w);
+	debug(5, "Window Height: %d\n",w->h);
+	debug(5, "Border Width:  %d\n",w->border);
+	return;
 }

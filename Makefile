@@ -6,9 +6,12 @@ BINARY_PATH = /usr/bin
 MAN_PATH = /usr/man/man1
 XROOT    = /usr/X11R6
 CFLAGS  += -I$(XROOT)/include -Wall
-LDFLAGS += -L$(XROOT)/lib -lX11 -lXmu 
+LDFLAGS += -L$(XROOT)/lib -lX11 -lXmu
 SRCS     = xlayout.c
 OBJS     = $(SRCS:.c=.o)
+
+# Add easing library
+LDFLAGS += -lease
 
 all: xlayout
 
