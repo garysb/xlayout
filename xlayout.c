@@ -81,10 +81,12 @@ int main(int argc, char **argv)
 
 		/* Display and screen options */
 		{"display",		required_argument,	0,				'd'},
-		{"screen",		required_argument,	0,				's'},
+		{"screen",		required_argument,	0,				'c'},
 
-		/* Window and pointer information */
+		/* Pointer information */
 		{"pointer",		no_argument,		0,				'p'},
+
+		/* Window information */
 		{"fullscreen",	no_argument,		0,				'f'},
 		{"top",			no_argument,		0,				't'},
 		{"hide",		no_argument,		0,				'x'},
@@ -92,21 +94,22 @@ int main(int argc, char **argv)
 		{"geometry",	required_argument,	0,				'g'},
 		{"id",			required_argument,	0,				'w'},
 		{"name",		required_argument,	0,				'n'},
-#ifdef _HAVE_LIBEASE_
-		{"ease",		no_argument,		0,				'e'},
-#endif
+
 		/* Actions */
-		{"set",			no_argument,		0,				'y'},
+		{"set",			no_argument,		0,				's'},
 		{"info",		no_argument,		0,				'i'},
 		{"show",		no_argument,		0,				'u'},
 		{"list",		no_argument,		0,				'l'},
+#ifdef _HAVE_LIBEASE_
+		{"ease",		no_argument,		0,				'e'},
+#endif
 		{0, 0, 0, 0}
 	};
 
 	/* Process commandline options */
 	while (1) {
 		/* Get the option variable for this pass */
-		i = getopt_long(argc,argv,"d:s:g:itn:hw:b:vufezpyxl",long_options, &option_index);
+		i = getopt_long(argc,argv,"vhd:c:pftxg:w:n:esiul",long_options, &option_index);
 		if (i == -1) {break;}
 
 		/* Run actions on our commands passed into the program */
@@ -141,7 +144,7 @@ int main(int argc, char **argv)
 				info_flag = 1;
 				break;
 			/* Set information */
-			case 'y':
+			case 's':
 				set_flag = 1;
 				break;
 			/* Hide an item */
@@ -171,7 +174,7 @@ int main(int argc, char **argv)
 				pointer_flag = 1;
 				break;
 				/* Set the screen */
-			case 's':
+			case 'c':
 				debug(8, "Setting screen to %s\n", optarg);
 				d.screen = atoi(optarg);
 				break;
@@ -222,7 +225,7 @@ int main(int argc, char **argv)
 	if (root_flag || id || name) {
 		/* Choose the window to use */
 		if (root_flag) {
-			debug(8, "Using window id '0'\n");
+			debug(8, "Using window id '0' (root window)\n");
 			w.id = "0";
 		} else if (id) {
 			debug(8, "Using window id %s\n", id);
@@ -271,7 +274,7 @@ int main(int argc, char **argv)
 				e.fpoint					= ease_pointer;
 
 				/* Set the duration for both x and y to the largest value */
-				int dx						= ((gp.x-x) < 0) ? ((gp.x-x)*-1) : gp.x-x;
+				int dx						= ((gp.x-x) < 0) ? ((gp.x-x)*-1) : gp.x-x;;
 				int dy						= ((gp.y-y) < 0) ? ((gp.y-y)*-1) : gp.y-y;
 				int du						= (dx > dy) ? dx : dy;
 
@@ -306,7 +309,10 @@ int main(int argc, char **argv)
 
 	/* List the windows */
 	else if (list_flag) {
-		list_windows();
+		Window root;
+		root = RootWindow(d.display,d.screen);
+		debug(5, "ID (STATE, GEOMETRY, NAME)\n\n");
+		list_windows(root, 0);
 	}
 
 	/* Display information about a window */
@@ -334,12 +340,12 @@ int main(int argc, char **argv)
 				XLWindow gw;
 				gw=w;
 				get_window(&gw);
-				debug(8, "Current window dimensions are x:%d, y:%d, w:%d, h:%d\n", gw.x, gw.y, gw.w, gw.h);
 
-				/* Get the geometry as x, y coordinates */
+				/* Get the given geometry as x, y coordinates */
 				int x, y, wi, hi, g;
 				XSizeHints hints = {0};
 				if (!XWMGeometry(d.display, d.screen, geometry, "100x100+100+100", 0, &hints, &x, &y, &wi, &hi, &g)) {
+					/* We couldnt get the given geometry, report an error an exit */
 					debug(5, "Error getting new geometry (%s)\n", geometry);
 					exit(1);
 				}
@@ -468,34 +474,51 @@ void display_version()
 /* Display program help information */
 void display_help()
 {
-	debug(5, "usage:  %s [-options ...]\n\n", program);
+	debug(5, "usage:  %s [options]\n\n", program);
 	debug(5, "where options include:\n");
-	debug(5, "    --version            Print the version\n");
-	debug(5, "    --help               Print this message\n");
-	debug(5, "    --list type          List either 'screens' or 'windows'\n");
-	debug(5, "    --info               Display window information\n");
-	debug(5, "    --set                Set window information\n");
-	debug(5, "    --display host:dpy   X server to contact\n");
-	debug(5, "    --root               Use the root window\n");
-	debug(5, "    --id windowid        Use the window with the specified id\n");
-	debug(5, "    --name windowname    Use the window with the specified name\n");
-	debug(5, "    --pointer            Set/show the pointer instead of a window\n");
-	debug(5, "    --geometry           Set the geometry of the id/name/pointer\n");
-	debug(5, "    --fullscreen         Set window to fullscreen\n");
-	debug(5, "    --top                Set window to display on the top of all others\n");
-	debug(5, "    --hidden             Hide the window or pointer\n");
-	debug(5, "    --show               Unhide the window or pointer\n");
-	debug(5, "    --verbose            Increase the verbosity of the output\n");
+	debug(5, "  --version              Print the version\n");
+	debug(5, "  -h, --help             Print this message\n");
+	debug(5, "  -v, --verbose [level]  Set the amount of information to display\n");
+	debug(5, "                         If no optional level is given, increase by 1\n");
+	debug(5, "\n");
+	debug(5, "  -l, --list             List windows on the display and screen\n");
+	debug(5, "  -i, --info             Display window or pointer information\n");
+	debug(5, "  -s, --set              Set window or pointer location or visibility\n");
+#ifdef _HAVE_LIBEASE_
+	debug(5, "  -e, --ease             Ease the window or pointer into position\n");
+#endif
+	debug(5, "\n");
+	debug(5, "  -d, --display host:dpy X server and display to connect to\n");
+	debug(5, "  -c, --screen screen    Set the screen to use\n");
+	debug(5, "  -p, --pointer          Run actions on the pointer\n");
+	debug(5, "  -w, --id windowid      Run actions on the window specified by id\n");
+	debug(5, "  -n, --name windowname  Run actions on the window with the specified name\n");
+	debug(5, "  --root                 Run actions on the root window\n");
+	debug(5, "  -g, --geometry         Set the geometry of the window or pointer\n");
+	debug(5, "  -f, --fullscreen       Set the window to the size of the screen\n");
+	debug(5, "  -t, --top              Set window to display on the top of all others\n");
+	debug(5, "  -x, --hidden           Hide the window or pointer\n");
+	debug(5, "  -u, --show             Unhide the window or pointer\n");
 	debug(5, "\n");
 	debug(5, "examples:\n");
-	debug(5, "    List windows:  xlayout --display :1.0 --list windows\n");
-	debug(5, "    Show win info: xlayout --display :0.0 --show --id 0xa00001\n");
-	debug(5, "                   xlayout --info --name \"www.google.co.uk - Mozilla Firefox\"\n");
-	debug(5, "    Set window:    xlayout --set --name MPlayer --fullscreen\n");
-	debug(5, "                   xlayout --name MPlayer --hidden\n");
-	debug(5, "                   xlayout --display domain.com:0.0 --name MPlayer --top\n");
-	debug(5, "    Show pointer:  xlayout --info --pointer --display :0.0\n");
-	debug(5, "    Set pointer:   xlayout --set --pointer --geometry 0x0+100+100\n");
+	debug(5, "  List windows:          xlayout --display :1.0 --list\n");
+	debug(5, "                         xlayout -ld d01.localnet.com:0.0\n");
+	debug(5, "                         xlayout -l\n");
+	debug(5, "  Show win info:         xlayout --display :0.0 --info --id 0xa00001\n");
+	debug(5, "                         xlayout --info --name \"google.com - Mozilla Firefox\"\n");
+	debug(5, "                         xlayout -iw 0xa00001\n");
+	debug(5, "  Set window:            xlayout --set --name MPlayer --fullscreen\n");
+	debug(5, "                         xlayout --name MPlayer --hidden --verbose 10\n");
+	debug(5, "                         xlayout --display domain.com:0.0 --name MPlayer --top\n");
+	debug(5, "                         xlayout -sn MPlayer -g 400x300+100+100\n");
+#ifdef _HAVE_LIBEASE_
+	debug(5, "                         xlayout -sen xawtv -g 500x400+200+100\n");
+#endif
+	debug(5, "  Show pointer:          xlayout -ip\n");
+	debug(5, "                         xlayout --info --pointer\n");
+	debug(5, "  Set pointer:           xlayout --set --pointer --geometry 0x0+100+100\n");
+	debug(5, "                         xlayout -spg 0x0+100+100\n");
+	debug(5, "                         xlayout -spx\n");
 	debug(5, "\n");
 	exit(0);
 }
@@ -697,13 +720,13 @@ void create_window(XLWindow *w)
 }
 
 /* Select a window by the window name */
-Window create_window_named(char *winsName, Window root)
+Window create_window_named(char *name, Window root)
 {
-	debug(8, "Connection to window %s\n", winsName);
+	debug(8, "Connection to window %s\n", name);
 	Window *children, dummy;
 	unsigned int child_count;
 	char *window_name;
-	if (XFetchName(d.display, root, &window_name) && strcmp(window_name, winsName) == 0) {
+	if (XFetchName(d.display, root, &window_name) && strcmp(window_name, name) == 0) {
 	  return(root);
 	}
 	if (!XQueryTree(d.display, root, &dummy, &dummy, &children, &child_count)) {
@@ -711,7 +734,7 @@ Window create_window_named(char *winsName, Window root)
 	}
 
 	while (child_count--) {
-		root = create_window_named(winsName,children[child_count]);
+		root = create_window_named(name, children[child_count]);
 		if (root)
 			break;
 	}
@@ -754,8 +777,10 @@ void window_border(XLWindow *w)
 /* Get the window information */
 void get_window(XLWindow *gw)
 {
+	/* Try fetch the window attributes */
 	XWindowAttributes winAttribs;
 	if (XGetWindowAttributes(d.display, gw->window, &winAttribs) == 0) {
+		/* We could not get the window attributes, report an error and exit program */
 		debug(5, "failed to get window attributes\n");
 		exit(1);
 	}
@@ -766,6 +791,9 @@ void get_window(XLWindow *gw)
 	gw->w		 		= winAttribs.width;
 	gw->h		 		= winAttribs.height;
 	gw->border			= winAttribs.border_width;
+
+	/* Display debug information */
+	debug(8, "Current window dimensions are x:%d, y:%d, w:%d, h:%d\n", gw->x, gw->y, gw->w, gw->h);
 }
 
 /* Set the window position */
@@ -777,15 +805,15 @@ void set_window(XLWindow *w)
 	if (strcmp(w->new_geometry, "fullscreen")) {
 		XWMGeometry(d.display, d.screen, w->new_geometry, "200x200+0+0", 0, &hints, &rx, &ry, &rw, &rh, &rg);
 	} else {
-		XWindowAttributes rootWinAttribs;
-		if (XGetWindowAttributes(d.display, RootWindow(d.display,d.screen), &rootWinAttribs) == 0) {
-			printf("Failed to get window attributes\n");
+		XWindowAttributes window_attributes;
+		if (XGetWindowAttributes(d.display, RootWindow(d.display,d.screen), &window_attributes) == 0) {
+			printf("Failed to get the root window attributes\n");
 			exit(1);
 		}
-		rx 	= rootWinAttribs.x;
-		ry 	= rootWinAttribs.y;
-		rw 	= rootWinAttribs.width;
-		rh 	= rootWinAttribs.height;
+		rx 	= window_attributes.x;
+		ry 	= window_attributes.y;
+		rw 	= window_attributes.width;
+		rh 	= window_attributes.height;
 	}
 
 	w->x = rx;
@@ -805,7 +833,7 @@ int ease_window(Ease_Multi *e, va_list ap)
 	w = va_arg(ap, XLWindow);
 
 	sprintf(geometry, "%dx%d+%d+%d", e->dimension[2].value, e->dimension[3].value, e->dimension[0].value, e->dimension[1].value);
-	usleep(1000);
+	usleep(10000);
 
 	/* Set the window to the new geometry */
 	w.new_geometry = geometry;
@@ -816,20 +844,50 @@ int ease_window(Ease_Multi *e, va_list ap)
 #endif
 
 /* Return a list of the windows on the X11 server */
-void list_windows()
+void list_windows(Window w, int depth)
 {
-	Window *children, dummy, root;
-	root = RootWindow(d.display,d.screen);
+	Window *children, dummy;
 	unsigned int child_count;
-	XQueryTree(d.display, root, &dummy, &dummy, &children, &child_count);
-	debug(5, "ID			NAME\n\n");
+	XQueryTree(d.display, w, &dummy, &dummy, &children, &child_count);
 
 	char *tmp_name;
+	char geometry[20];
+	int tmp_depth = depth;
+	XWindowAttributes tmp_attr;
+	XTextProperty tmp_wmname;
+
 	while (child_count--) {
 		tmp_name = NULL;
 		XFetchName(d.display, children[child_count], &tmp_name);
-		debug(5, "0x%lx",children[child_count]);
-		tmp_name ? debug(5, "\t\t%s\n",tmp_name) : debug(5, "\t\tNA\n");
+		XGetWMName(d.display, children[child_count], &tmp_wmname);
+		XGetWindowAttributes(d.display, children[child_count], &tmp_attr);
+		sprintf(geometry, "%dx%d+%d+%d",tmp_attr.width, tmp_attr.height, tmp_attr.x, tmp_attr.y);
+
+		/* Display padding in the front */
+		if (tmp_depth > 0)
+			while (tmp_depth--) printf(" ");
+
+		debug(5, "0x%lx (",children[child_count]);
+
+		switch (tmp_attr.map_state)
+		{
+			case 0:
+				debug(5, "unmapped, ");
+				break;
+			case 1:
+				debug(5, "unviewable, ");
+				break;
+			case 2:
+				debug(5, "visible, ");
+				break;
+		}
+		debug(5, "%s, ", geometry);
+		debug(5, "%s", tmp_name);
+
+		debug(5, ")\n");
+
+		/* Display the children windows */
+		list_windows(children[child_count], depth+1);
 	}
 }
 
@@ -839,34 +897,65 @@ void display_window(XLWindow *w)
 	/* Fetch the windows name */
 	debug(8, "Fetching windows name for %s\n", w->id);
 	char *tmp_name;
+	XTextProperty tmp_wmname;
+
 	XFetchName(d.display, w->window, &tmp_name);
+	XGetWMName(d.display, w->window, &tmp_wmname);
 	w->name = (tmp_name) ? tmp_name : "Root";
 	debug(8, "Windows name returned %s\n", w->name);
 
 	/* Fetch the windows attributes */
 	debug(8, "Fetching windows attributes for %s\n", w->id);
-	XWindowAttributes winAttribs;
-	if (XGetWindowAttributes(d.display,w->window,&winAttribs) == 0) {
+	XWindowAttributes window_attributes;
+	if (XGetWindowAttributes(d.display,w->window, &window_attributes) == 0) {
 		debug(5, "failed to get window attributes\n");
 		exit(1);
 	}
 
 	/* Set our windows attributes to those returned */
-	w->x		 		= winAttribs.x;
-	w->y		 		= winAttribs.y;
-	w->w		 		= winAttribs.width;
-	w->h		 		= winAttribs.height;
-	w->border			= winAttribs.border_width;
+	w->x		 		= window_attributes.x;
+	w->y		 		= window_attributes.y;
+	w->w		 		= window_attributes.width;
+	w->h		 		= window_attributes.height;
+	w->border			= window_attributes.border_width;
 
-	/* Display the info to the user */
-	debug(5, "Window Name:   %s\n",w->name);
+	/* Display name, id, and geometry information */
+	debug(5, "Window Name:   %s\n", tmp_wmname.value);
+	debug(5, "WM Name:   %s\n", tmp_wmname.value);
 	debug(5, "Window Id:     %s\n", w->id);
 	debug(5, "geometry:      ");
 	debug(1, "%dx%d+%d+%d\n", w->w, w->h, w->x, w->y);
-	debug(5, "X Position:    %d\n",w->x);
-	debug(5, "Y Position:    %d\n",w->y);
-	debug(5, "Window Width:  %d\n",w->w);
-	debug(5, "Window Height: %d\n",w->h);
-	debug(5, "Border Width:  %d\n",w->border);
+	debug(5, "X Position:    %d\n", w->x);
+	debug(5, "Y Position:    %d\n", w->y);
+	debug(5, "Window Width:  %d\n", w->w);
+	debug(5, "Window Height: %d\n", w->h);
+	debug(5, "Border Width:  %d\n", w->border);
+
+	/* Display the map state */
+	switch (window_attributes.map_state)
+	{
+		case 0:
+			debug(5, "Map state:     unmapped\n");
+			break;
+		case 1:
+			debug(5, "Map state:     unviewable\n");
+			break;
+		case 2:
+			debug(5, "Map state:     visible\n");
+			break;
+	}
+
+	/* Display the class */
+	switch (window_attributes.class)
+	{
+		case 0:
+			debug(5, "Type:          InputOutput\n");
+			break;
+		case 1:
+			debug(5, "Type:          InputOnly\n");
+			break;
+	}
+
+	debug(5, "Overridable:   %s\n", window_attributes.override_redirect ? "false" : "true");
 	return;
 }
