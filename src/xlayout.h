@@ -21,7 +21,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _HAVE_XLAYOUT_
 #define _HAVE_XLAYOUT_
 
+#include <config.h>
+
+#ifdef HAVE_XLAYOUT
 #include <ease.h>
+#endif
 
 /* Enumeration for toggling state */
 enum toggle {UNSET=0, SET=1};

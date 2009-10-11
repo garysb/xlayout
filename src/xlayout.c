@@ -29,7 +29,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <X11/cursorfont.h>
 #include <X11/Xmu/WinUtil.h>
 #include "xlayout.h"
-#include <ease.h>
 
 /* Define program information */
 const char *program				= "xlayout";
@@ -694,7 +693,7 @@ void create_window(XLWindow *w)
 		} else {
 			debug(10, "Window id (%s) set, now connecting\n", w->id);
 			w->window = XmuClientWindow(d.display, w->window);
-			return;
+				return;
 		}
 	}
 
@@ -855,11 +854,14 @@ void list_windows(Window w, int depth)
 	int tmp_depth = depth;
 	XWindowAttributes tmp_attr;
 	XTextProperty tmp_wmname;
+	XClassHint tmp_cname;
 
 	while (child_count--) {
 		tmp_name = NULL;
+		tmp_cname.res_name = NULL;
 		XFetchName(d.display, children[child_count], &tmp_name);
 		XGetWMName(d.display, children[child_count], &tmp_wmname);
+		XGetClassHint(d.display, children[child_count], &tmp_cname);
 		XGetWindowAttributes(d.display, children[child_count], &tmp_attr);
 		sprintf(geometry, "%dx%d+%d+%d",tmp_attr.width, tmp_attr.height, tmp_attr.x, tmp_attr.y);
 
@@ -882,13 +884,17 @@ void list_windows(Window w, int depth)
 				break;
 		}
 		debug(5, "%s, ", geometry);
-		debug(5, "%s", tmp_name);
+		debug(5, "%s \"%s\"", tmp_cname.res_name ? tmp_cname.res_name : "unknown", tmp_name ? tmp_name : "unknown");
 
 		debug(5, ")\n");
+
+		XFree(tmp_name);
 
 		/* Display the children windows */
 		list_windows(children[child_count], depth+1);
 	}
+
+	XFree(children);
 }
 
 /* Show information about a window */
