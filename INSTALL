@@ -16,7 +16,7 @@
 2B) DOWNLOAD PACKAGE: (http://sourceforge.net/projects/xlayout/)
   The packaged source files located on Sourceforge already have the automake
   scripts run on them, and so, dont need to be run. Simply download the tar.bz2
-  file and run 'tar -jxf xlayou-<version>.tar.bz2'.
+  file and run 'tar -jxf xlayout-<version>.tar.bz2'.
 
 3) BUILDING: (configure your environment, compile, then install xlayout)
   In order to build xlayout from source, start by configuring your environment.

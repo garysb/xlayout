@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 			debug(8, "Using window id %s\n", id);
 			w.id = id;
 		} else if (name) {
-			debug(8, "Using window name %s\n", name);
+			debug(8, "Using window named %s\n", name);
 			w.id = "n";
 			w.name = name;
 		}
@@ -699,13 +699,12 @@ void create_window(XLWindow *w)
 
 	/* Set the window using the window name */
 	if (strcmp(w->name, "NULL")) {
-		debug(8, "Trying to connect to window named %s\n", w->name);
+		debug(8, "Searching for window named %s\n", w->name);
 		Window root;
 		char *name;
-		char *tmp_id;
-		name = w->name;
+		char tmp_id[20];
 		root = RootWindow(d.display,d.screen);
-		w->window = create_window_named(name, root);
+		w->window = create_window_named(w->name, root);
 		sprintf(tmp_id, "0x%lx", w->window);
 		w->id = tmp_id;
 	}
@@ -719,27 +718,29 @@ void create_window(XLWindow *w)
 }
 
 /* Select a window by the window name */
-Window create_window_named(char *name, Window root)
+Window create_window_named(char *name, Window tmp_window)
 {
-	debug(8, "Connection to window %s\n", name);
 	Window *children, dummy;
 	unsigned int child_count;
 	char *window_name;
-	if (XFetchName(d.display, root, &window_name) && strcmp(window_name, name) == 0) {
-	  return(root);
+
+	debug(8, "Testing window 0x%lx\n", tmp_window);
+	if (XFetchName(d.display, tmp_window, &window_name) && strcmp(window_name, name) == 0) {
+		return(tmp_window);
 	}
-	if (!XQueryTree(d.display, root, &dummy, &dummy, &children, &child_count)) {
+
+	if (!XQueryTree(d.display, tmp_window, &dummy, &dummy, &children, &child_count)) {
 		return(0);
 	}
 
 	while (child_count--) {
-		root = create_window_named(name, children[child_count]);
-		if (root)
+		tmp_window = create_window_named(name, children[child_count]);
+		if (tmp_window)
 			break;
 	}
 
-	if (children) XFree ((char *)children);
-	return(root);
+	//if (children) XFree ((char *)children);
+	return(tmp_window);
 }
 
 /* Map the window for view */

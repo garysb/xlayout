@@ -90,7 +90,7 @@ int ease_pointer(Ease_Multi *e, va_list ap);
 /* Window functions */
 void list_windows(Window w, int depth);
 void create_window(XLWindow *w);
-Window create_window_named(char *name, Window root);
+Window create_window_named(char *name, Window tmp_window);
 void display_window(XLWindow *w);
 void show_window(XLWindow *w);
 void hide_window(XLWindow *w);
