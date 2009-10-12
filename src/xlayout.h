@@ -23,7 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #include <config.h>
 
-#ifdef HAVE_XLAYOUT
+#ifdef HAVE_EASE_MULTI
 #include <ease.h>
 #endif
 
@@ -83,7 +83,7 @@ void display_pointer();
 void hide_pointer();
 void set_pointer();
 void get_pointer(XLPointer *gp);
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 int ease_pointer(Ease_Multi *e, va_list ap);
 #endif
 
@@ -98,7 +98,7 @@ void top_window(XLWindow *w);
 void window_border(XLWindow *w);
 void set_window(XLWindow *w);
 void get_window(XLWindow *gw);
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 int ease_window(Ease_Multi *e, va_list ap);
 #endif
 

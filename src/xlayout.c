@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 	int root_flag				= 0;
 	int show_flag				= 0;
 	int top_flag				= 0;
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 	int ease_flag				= 0;
 #endif
 
@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 		{"info",		no_argument,		0,				'i'},
 		{"show",		no_argument,		0,				'u'},
 		{"list",		no_argument,		0,				'l'},
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 		{"ease",		no_argument,		0,				'e'},
 #endif
 		{0, 0, 0, 0}
@@ -197,7 +197,7 @@ int main(int argc, char **argv)
 				debug(8, "Setting window name to %s\n", optarg);
 				name = optarg;
 				break;
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 			/* Enable easing */
 			case 'e':
 				ease_flag = 1;
@@ -249,7 +249,7 @@ int main(int argc, char **argv)
 			exit(1);
 		} else {
 			p.new_geometry = geometry;
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 			if (ease_flag) {
 				/* Get the current pointer position */
 				XLPointer gp;
@@ -333,7 +333,7 @@ int main(int argc, char **argv)
 		w.new_geometry = geometry;
 		create_window(&w);
 
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 			if (ease_flag) {
 				/* Get the current window position */
 				XLWindow gw;
@@ -483,7 +483,7 @@ void display_help()
 	debug(5, "  -l, --list             List windows on the display and screen\n");
 	debug(5, "  -i, --info             Display window or pointer information\n");
 	debug(5, "  -s, --set              Set window or pointer location or visibility\n");
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 	debug(5, "  -e, --ease             Ease the window or pointer into position\n");
 #endif
 	debug(5, "\n");
@@ -510,7 +510,7 @@ void display_help()
 	debug(5, "                         xlayout --name MPlayer --hidden --verbose 10\n");
 	debug(5, "                         xlayout --display domain.com:0.0 --name MPlayer --top\n");
 	debug(5, "                         xlayout -sn MPlayer -g 400x300+100+100\n");
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 	debug(5, "                         xlayout -sen xawtv -g 500x400+200+100\n");
 #endif
 	debug(5, "  Show pointer:          xlayout -ip\n");
@@ -625,7 +625,7 @@ void set_pointer(char *geometry)
 	}
 }
 
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 /* Callback to set the pointer for easing */
 int ease_pointer(Ease_Multi *e, va_list ap)
 {
@@ -823,7 +823,7 @@ void set_window(XLWindow *w)
 	return;
 }
 
-#ifdef _HAVE_LIBEASE_
+#ifdef HAVE_EASE_MULTI
 /* Callback to set the window for easing */
 int ease_window(Ease_Multi *e, va_list ap)
 {
