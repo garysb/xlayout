@@ -1,0 +1,10 @@
+SET:  If we recieved a geometry, the user is obviously trying to set the window
+      or pointer to that value, in which case, why should they need to specify
+      the --set commandline option.
+
+EASE: We need to find an eligant way of letting the user define which type of
+      easing methods they want to use and also let them set the ease duration.
+
+      The ease option should also not require the --set option as the point of
+      easing something is to set it to a new location in multiple steps.
+

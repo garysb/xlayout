@@ -2,67 +2,94 @@
 .SH NAME
 xlayout \- Manipulate X11 windows and pointer from console
 .SH SYNOPSIS
-.B xlayout [-set|-show|-help|-version|-list][options]
+.B xlayout [ACTIONS] [OPTIONS]
 .I ""
 .SH DESCRIPTION
 xlayout controls the position and size of X11 windows or pointer from a console
 or remotely. Some of the features include hiding or setting a window on top of 
-all others, easing the X, Y, Width and height of a window into its new location
-and setting the border width.
+all others, easing the X, Y, width and height of a window into its new location.
+.SS ACTIONS
+.TP
+.I "\-h \-\-help"
+Display information and examples of how to use xlayout.
+.TP
+.I "\-\-version"
+Display version and author information for xlayout.
+.TP
+.I "\-l \-\-list"
+List all windows on the given display. This returns the windows name,id, mask,
+and visibility state. The list of windows are indented to display parent/child
+information about the windows.
+.TP
+.I "\-i \-\-info"
+Display information on the window or pointer. If the -p, --pointer options are
+provided, display the information about the pointer. If the -n,--name or the
+-w,--id options are set, display information on the window provided.
+.TP
+.I "\-s \-\-set"
+Set the window or pointer to a value specified with the geometry option.
+.TP
+.I "\-e \-\-ease"
+When the libease library is installed, the ease option becomes available. This
+gives you the option to set the window or pointer to a new location in stages
+provided by the easing library. These stages are defined by the type of easing
+method used.
+.TP
+.I "\-u \-\-show"
+When a window is unmasked (aka. hidden), the show option changes the windows
+mask to visible. If the -p, --pointer option is set, the show option unhides
+the hidden pointer.
+.TP
+.I "\-h \-\-hide"
+Hides a window or the pointer. When the -n, --name or the -w, --id option is
+given, the hide option sets the windows state to unmasked. If you set the
+-p, --pointer option, the pointers cursor is set to an invisible cursor.
+.TP
+.I "\-t \-\-top"
+Set the window specified with the -n, --name or -w, --id options to be on top
+of all the other windows.
 .SS OPTIONS
 .TP
-.I "\-display host:number(localhost:0.0)"
-Set the server and display to use. If unspecified, :0.0 is used as the default.
+.I "\-v \-\-verbose int[0-10] (DEFAULT 5)"
+The verbose option increases or descreses the verbosity of xlayout. By default
+the verbosity is set to 5. If no value is given, the verbose option increases
+the verbosity by 1. If a value is provided, the value is taken as an absolute
+value. When nesting xlayout within scripts, a value of 1 should be entered.
 .TP
-.I "\-id hex(0x00024)"
+.I "\-d \-\-display host:display (localhost:0.0)"
+Set the server and display to use. If unspecified, :0.0 is used as the default.
+To connect to a remote server, specify the uri as follows: my.example.com:0.0
+.TP
+.I "\-g \-\-geometry (<width>x<height>+<xposition>+<yposition>)"
+Set the window or pointers geometry. If the -p, --pointer option is set, the
+geometry option sets the pointer to the position set in the xposition and the
+yposition values. The width and height values are ignored.
+.sp
+When the -n, --name or -w, id options are set, the geometry option sets the
+given window to the width, height, xposition, and yposition specified in the
+geometry string. (WxH+X+Y eg. 800x600+0+0)
+.TP
+.I "\-p \-\-pointer"
+Set xlayout to run all actions on the pointer instead of the window.
+.TP
+.I "\-w \-\-id hex(0x00024)"
 Set the window ID to use. (No default)
 .TP
-.I "\-name windowname(xterm)"
+.I "\-n \-\-name windowname(xterm)"
 Set the window name to use. (No default)(Will use the first window of that name)
 .TP
-.I "\-pointer"
-Set or show the pointers position.
+.I "\-\-root"
+When the root option is set, all actions that would normally be run on a window
+will be run on the root display instead (this is normally the desktop).
 .TP
-.I "\-root"
-Set the window to the root window.
+.I "\-f \-\-fullscreen"
+Set the window to the size of the windows current display. If the set display
+contains multiple screens and is set to stretch across all screens, the window
+will be streched across all screens.
 .TP
-.I "\-fullscreen"
-Set the window to fullscreen.
-.TP
-.I "\-set"
-Set the window or pointer.
-.TP
-.I "\-show"
-Set the window or pointer information.
-.TP
-.I "\-hidden"
-Set the window to be hidden.
-.TP
-.I "\-border"
-Set the windows border width in pixels.
-.TP
-.I "\-geometry"
-Set the window or pointers geometry. (WxH+X+Y eg. 800x600+0+0)
-.TP
-.I "\-ease"
-Ease the window into position. ('in','out','io','oi')
-.TP
-.I "\-list"
-List all windows on the given display.
-.TP
-.I "\-top"
-Set the window to be on top of all others.
-.TP
-.I "\-quiet"
-Return only a boolen value of result. ('1' for success, '0' for failure)
-.TP
-.I "\-help"
-Show help (and examples) of how to use this program.
-.TP
-.I "\-v \-\-version"
-Display what version of xlayout this is.
 .SH MORE INFORMATION
 http://freedesktop.org
+.sp .3
 http://www.stroppytux.net/projects/xlayout/
 .SH "AUTHORS"
 Gary Broadbent (gary@stroppytux.net)

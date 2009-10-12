@@ -4,7 +4,8 @@
   1A) Utilities needed to compile xlayout such as a c compiler like gcc.
   1B) The header files for X11.
   1C) The standard c libraries.
-  1D) OPTIONAL: Installing libease will enable easing/tweening effects.
+  1D) OPTIONAL: Installing libease will enable easing/tweening effects. This
+                can be found at http://sourceforge.net/projects/libease/
 
 2A) SVN CHECKOUT: (http://anonyous@www.stroppytux.net/svn/xlayout/tags/<ver>/)
   When checking out a revision from subversion, you will need to have installed

@@ -87,21 +87,21 @@ int main(int argc, char **argv)
 
 		/* Window information */
 		{"fullscreen",	no_argument,		0,				'f'},
-		{"top",			no_argument,		0,				't'},
-		{"hide",		no_argument,		0,				'x'},
 		{"root",		no_argument,		&root_flag,		1},
 		{"geometry",	required_argument,	0,				'g'},
 		{"id",			required_argument,	0,				'w'},
 		{"name",		required_argument,	0,				'n'},
 
 		/* Actions */
-		{"set",			no_argument,		0,				's'},
-		{"info",		no_argument,		0,				'i'},
-		{"show",		no_argument,		0,				'u'},
 		{"list",		no_argument,		0,				'l'},
+		{"info",		no_argument,		0,				'i'},
+		{"set",			no_argument,		0,				's'},
 #ifdef HAVE_EASE_MULTI
 		{"ease",		no_argument,		0,				'e'},
 #endif
+		{"show",		no_argument,		0,				'u'},
+		{"top",			no_argument,		0,				't'},
+		{"hide",		no_argument,		0,				'x'},
 		{0, 0, 0, 0}
 	};
 
