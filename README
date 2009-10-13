@@ -1,2 +1,10 @@
-Xlayout is a simple utility for controlling X11 windows and pointer from the console or remotely. It can alter the geometry of a window, the position of the pointer, hide a window or send it to the top, list all windows, and get the current pointer position. For use in scripts, it has the ability to return a status result ("1" for error, "0" for success). It can also ease windows into location.
+xlayout is a terminal based utility to get and set information about X11 windows and the pointer. Its designed to be easily integrated into bash shell scripts and takes advantage of the X11 protocol to allow it to access remote X11 desktops. With the aid of the libease library, xlayout provides you with the ability to smoothly ease the windows and pointer into position.
 
+*****REQUIREMENTS*****
+In order to install xlayout from the source code you need the following:
+  1) You will need a c compiler on your system such as gcc.
+  2) You need to have the X11 header files installed on your system.
+  3) You need to have the standard c libraries installed on your system.
+  4) OPTIONAL: Installing libease will give you the ability to ease the windows
+     and pointer into position. Please go the the libease page to get more info
+     http://www.stroppytux.net/projects/libease/

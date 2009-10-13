@@ -870,24 +870,24 @@ void list_windows(Window w, int depth)
 		if (tmp_depth > 0)
 			while (tmp_depth--) printf(" ");
 
-		debug(5, "0x%lx (",children[child_count]);
+		debug(1, "0x%lx (",children[child_count]);
 
 		switch (tmp_attr.map_state)
 		{
 			case 0:
-				debug(5, "unmapped, ");
+				debug(3, "unmapped, ");
 				break;
 			case 1:
-				debug(5, "unviewable, ");
+				debug(3, "unviewable, ");
 				break;
 			case 2:
-				debug(5, "visible, ");
+				debug(3, "visible, ");
 				break;
 		}
-		debug(5, "%s, ", geometry);
-		debug(5, "%s \"%s\"", tmp_cname.res_name ? tmp_cname.res_name : "unknown", tmp_name ? tmp_name : "unknown");
+		debug(4, "%s, ", geometry);
+		debug(2, "%s \"%s\"", tmp_cname.res_name ? tmp_cname.res_name : "unknown", tmp_name ? tmp_name : "unknown");
 
-		debug(5, ")\n");
+		debug(1, ")\n");
 
 		XFree(tmp_name);
 
