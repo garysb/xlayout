@@ -1,0 +1,12 @@
+##### 0.8 ##########
+This release of xlayout is a major overhaul.
+ 1) Updates have been made to refine the command line arguments to be more
+    intuitive.
+ 2) The custom build system has been replaced with automake to support cross
+    platform compiling.
+ 3) xlayout now properly integrates into libease to provide smooth easing
+    motions when the pointer is moved or the window resized or repositioned.
+ 4) The large struct used before has been broken down to better represent the
+    data contained inside each section.
+ 5) Internal functions have been renamed to be more clearly understood.
+
