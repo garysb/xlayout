@@ -1,6 +1,6 @@
 /* vim: set ts=4 sw=4 nowrap: */
 /*
-Copyright (C) 2009 Gary Stidston-Broadbent (gary@stroppytux.net)
+Copyright (C) 2010 Gary Stidston-Broadbent (xlayout@stroppytux.net)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -33,7 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 /* Define program information */
 const char *program				= "xlayout";
 const char *author				= "Gary Stidston-Broadbent";
-const char *contact				= "gary@stroppytux.net";
+const char *contact				= "xlayout@stroppytux.net";
 const char *version				= "0.8";
 short int verbosity				= 5;
 

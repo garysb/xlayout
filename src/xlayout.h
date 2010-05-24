@@ -1,6 +1,6 @@
 /* vim: set ts=4 sw=4 nowrap: */
 /*
-Copyright (C) 2009 Gary Stidston-Broadbent (gary@stroppytux.net)
+Copyright (C) 2010 Gary Stidston-Broadbent (xlayout@stroppytux.net)
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
