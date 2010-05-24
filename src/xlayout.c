@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <X11/Xmu/WinUtil.h>
 #include "xlayout.h"
 
-/* Define program information */
+/* Set program constants */
 const char *program				= "xlayout";
 const char *author				= "Gary Stidston-Broadbent";
 const char *contact				= "xlayout@stroppytux.net";
@@ -41,10 +41,10 @@ short int verbosity				= 5;
 XLDisplay d;
 XLPointer p;
 
-/* Execute out main code block */
+/* Execute our main code block */
 int main(int argc, char **argv)
 {
-	/* Define defaults before we start */
+	/* Set defaults before we start */
 	d.name						= NULL;
 	d.screen					= 0;
 	d.screen_count				= 0;
@@ -462,7 +462,7 @@ void display_version()
 {
 	debug(5, "%s ", program);
 	debug(1, "%s\n", version);
-	debug(5, "Copyright (C) 2009 %s\n", author);
+	debug(5, "Copyright (C) 2010 %s\n", author);
 	debug(5, "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>\n");
 	debug(5, "This is free software: you are free to change and redistribute it.\n");
 	debug(5, "There is NO WARRANTY, to the extent permitted by law.\n");

@@ -21,14 +21,16 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #ifndef _HAVE_XLAYOUT_
 #define _HAVE_XLAYOUT_
 
+/* Include the config header produced by automake */
 #include <config.h>
 
+/* If automake finds libease on the system, include the header file */
 #ifdef HAVE_EASE_MULTI
 #include <ease.h>
 #endif
 
 /* Enumeration for toggling state */
-enum toggle {UNSET=0, SET=1};
+/* FIXME: Dont think I need it: enum toggle {UNSET=0, SET=1}; */
 
 /* Display information */
 typedef struct {

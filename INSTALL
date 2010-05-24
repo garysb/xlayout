@@ -7,7 +7,7 @@
   1D) OPTIONAL: Installing libease will enable easing/tweening effects. This
                 can be found at http://sourceforge.net/projects/libease/
 
-2A) SVN CHECKOUT: (http://anonyous@www.stroppytux.net/svn/xlayout/tags/<ver>/)
+2A) SVN CHECKOUT: (http://anonyous@svn.stroppytux.net/xlayout/tags/<ver>/)
   When checking out a revision from subversion, you will need to have installed
   the automake utilities. Once checked out, run 'autoremake --install' within
   the root directory of xlayout. This will build the Makefiles and configure

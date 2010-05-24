@@ -1,6 +1,6 @@
 # Ensure we have the correct version of autoconf running and initialise it
 AC_PREREQ([2.63])
-AC_INIT([xlayout], [0.8], [xlayout@stroppytux.net])
+AC_INIT([xlayout], [0.9], [xlayout@stroppytux.net])
 
 # Set some information about the headers and makefiles
 AC_CONFIG_SRCDIR([src/xlayout.h])
