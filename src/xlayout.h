@@ -30,7 +30,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #endif
 
 /* Enumeration for toggling state */
-/* FIXME: Dont think I need it: enum toggle {UNSET=0, SET=1}; */
+enum toggle {UNSET=0, SET=1};
 
 /* Display information */
 typedef struct {
@@ -105,3 +105,4 @@ int ease_window(Ease_Multi *e, va_list ap);
 #endif
 
 #endif
+

@@ -31,10 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include "xlayout.h"
 
 /* Set program constants */
-const char *program				= "xlayout";
 const char *author				= "Gary Stidston-Broadbent";
-const char *contact				= "xlayout@stroppytux.net";
-const char *version				= "0.8";
 short int verbosity				= 5;
 
 /* Define our global objects */
@@ -310,7 +307,7 @@ int main(int argc, char **argv)
 	else if (list_flag) {
 		Window root;
 		root = RootWindow(d.display,d.screen);
-		debug(5, "ID (STATE, GEOMETRY, NAME)\n\n");
+		// debug(6, "ID (STATE, GEOMETRY, NAME)\n\n");
 		list_windows(root, 0);
 	}
 
@@ -460,20 +457,21 @@ void debug(short int level, char *msg, ...)
 /* Display program version information */
 void display_version()
 {
-	debug(5, "%s ", program);
-	debug(1, "%s\n", version);
+	debug(5, "%s ", PACKAGE);
+	debug(1, "%s\n", PACKAGE_VERSION);
 	debug(5, "Copyright (C) 2010 %s\n", author);
 	debug(5, "License GPLv2: GNU GPL version 2 <http://gnu.org/licenses/gpl.html>\n");
 	debug(5, "This is free software: you are free to change and redistribute it.\n");
 	debug(5, "There is NO WARRANTY, to the extent permitted by law.\n");
-	debug(5, "\nWritten by %s\n", author);
+	debug(5, "\nWritten by %s (%s)\n", author, PACKAGE_BUGREPORT);
+	debug(5, "%s\n", PACKAGE_URL);
 	exit(0);
 }
 
 /* Display program help information */
 void display_help()
 {
-	debug(5, "usage:  %s [options]\n\n", program);
+	debug(5, "usage:  %s [options]\n\n", PACKAGE);
 	debug(5, "where options include:\n");
 	debug(5, "  --version              Print the version\n");
 	debug(5, "  -h, --help             Print this message\n");
@@ -701,7 +699,7 @@ void create_window(XLWindow *w)
 	if (strcmp(w->name, "NULL")) {
 		debug(8, "Searching for window named %s\n", w->name);
 		Window root;
-		char *name;
+		//char *name;
 		char tmp_id[20];
 		root = RootWindow(d.display,d.screen);
 		w->window = create_window_named(w->name, root);
@@ -852,6 +850,9 @@ void list_windows(Window w, int depth)
 
 	char *tmp_name;
 	char geometry[20];
+	char **cliargv = NULL;
+	int cliargc;
+	XTextProperty machtp;
 	int tmp_depth = depth;
 	XWindowAttributes tmp_attr;
 	XTextProperty tmp_wmname;
@@ -866,28 +867,40 @@ void list_windows(Window w, int depth)
 		XGetWindowAttributes(d.display, children[child_count], &tmp_attr);
 		sprintf(geometry, "%dx%d+%d+%d",tmp_attr.width, tmp_attr.height, tmp_attr.x, tmp_attr.y);
 
+		/* Get WM_MACHINE and WM_COMMAND */
+		if (!XGetWMClientMachine(d.display, children[child_count], &machtp)) {
+			machtp.value = NULL;
+			machtp.encoding = None;
+		}
+
+		if (!XGetCommand(d.display, children[child_count], &cliargv, &cliargc)) {
+			if (machtp.value) XFree ((char *) machtp.value);
+			if (verbosity <= 8) {
+				continue;
+			}
+		}
+
 		/* Display padding in the front */
 		if (tmp_depth > 0)
 			while (tmp_depth--) printf(" ");
 
-		debug(1, "0x%lx (",children[child_count]);
+		debug(1, "0x%lx",children[child_count]);
 
 		switch (tmp_attr.map_state)
 		{
 			case 0:
-				debug(3, "unmapped, ");
+				debug(3, ", unmapped");
 				break;
 			case 1:
-				debug(3, "unviewable, ");
+				debug(3, ", unviewable");
 				break;
 			case 2:
-				debug(3, "visible, ");
+				debug(3, ", visible");
 				break;
 		}
-		debug(4, "%s, ", geometry);
-		debug(2, "%s \"%s\"", tmp_cname.res_name ? tmp_cname.res_name : "unknown", tmp_name ? tmp_name : "unknown");
-
-		debug(1, ")\n");
+		debug(4, ", %s", geometry);
+		debug(2, ", \"%s (%s)\"", tmp_cname.res_name ? tmp_cname.res_name : "unknown", tmp_name ? tmp_name : "unknown");
+		debug(1, "\n");
 
 		XFree(tmp_name);
 

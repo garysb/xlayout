@@ -1,6 +1,6 @@
 # Ensure we have the correct version of autoconf running and initialise it
 AC_PREREQ([2.65])
-AC_INIT(xlayout, 0.9, xlayout@stroppytux.net)
+AC_INIT(xlayout, 0.9, xlayout@stroppytux.net, ,http://www.stroppytux.net/projects/xlayout)
 
 # Set some information about the headers and makefiles
 AC_CONFIG_SRCDIR([src/xlayout.h])
@@ -8,7 +8,7 @@ AC_CONFIG_HEADERS([src/config.h])
 AC_CONFIG_FILES([Makefile src/Makefile])
 
 # Checks for programs.
-#AM_INIT_AUTOMAKE([-Wall -Werror foreign])
+AM_INIT_AUTOMAKE
 AC_PROG_CC
 
 # Checks for header files and make sure ease has ease_multi
