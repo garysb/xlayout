@@ -1,3 +1,4 @@
+AUTOMAKE_OPTIONS = foreign
 SUBDIRS = src
 DIST_SUBDIRS = src
 dist_doc_DATA = README
