@@ -1,31 +1,44 @@
 -----xlayout installation guide-----
 
-1) REQUIREMENTS: In order to install and use xlayout, you need the following:
-  1A) Utilities needed to compile xlayout such as a c compiler like gcc.
-  1B) The header files for X11.
-  1C) The standard c libraries.
-  1D) OPTIONAL: Installing libease will enable easing/tweening effects. This
-                can be found at http://sourceforge.net/projects/libease/
+Depending on how you get xlayout, there are two diferent installation methods.
+With the version checked out from the subversion repository, you will need to
+have the automake tools installed. With the tar.gz file from sourceforge or from
+freashmeat, this has already been done for you.
 
-2A) SVN CHECKOUT: (http://anonyous@svn.stroppytux.net/xlayout/tags/<ver>/)
-  When checking out a revision from subversion, you will need to have installed
-  the automake utilities. Once checked out, run 'autoremake --install' within
-  the root directory of xlayout. This will build the Makefiles and configure
-  scripts needed to build xlayout.
+xlayout has some optional libraries that it can use to enhance itself.
+Installing libease will enable easing/tweening effects that will allow you to
+animate pointer and window positioning/sizing. For further information about
+libease, please go to http://sourceforge.net/projects/libease/
+xlayout can also support regular expressions if your system has the regular
+expression library installed. On most linux systems, it will be. xlayout uses
+regex to allow you to use regular expressions when trying to find windows by
+their name.
 
-2B) DOWNLOAD PACKAGE: (http://sourceforge.net/projects/xlayout/)
-  The packaged source files located on Sourceforge already have the automake
-  scripts run on them, and so, dont need to be run. Simply download the tar.bz2
-  file and run 'tar -jxf xlayout-<version>.tar.bz2'.
+As most people that are less savvy tend to stick to Ubuntu, I will describe the
+installation methods for Ubuntu. Please bare this in mind and change commands to
+match your environment.
 
-3) BUILDING: (configure your environment, compile, then install xlayout)
-  In order to build xlayout from source, start by configuring your environment.
-  This is done by executing the './configure' script in xlayouts root directory
-  with the configure options set. (Refer to './configure --help' for options.
+1.*** USING THE CHECKED OUT VERSION FROM svn.stroppytux.net ***
+   *  If you downloaded the tar.gz version, skip to section 2.
+   *  # sudo apt-get install automake libtool libx11-dev libxmu-dev build-essential
+   *  # svn co http://anonymous@svn.stroppytux.net/xlayout/tags/0.9 xlayout-0.9
+   *  Change into the root directory of xlayout (contains configure.ac)
+   *  # aclocal # This generates your aclocal.m4 file.
+   *  # autoheader # This generates the src/config.h.in template file.
+   *  # automake --add-missing # This generates all the scripts for autoconf.
+   *  # autoconf # This generates your configure script to compile xlayout.
 
-  Once the configuration is done, run the 'make' command to compile the source.
-  This will compile xlayout and set the required files to be installed.
+2.*** USING THE tar.gz VERSION FROM sourcefore.net/freshmeat.net ***
+   *  If you downloaded the subversion version, skip to section 3.
+   *  # sudo apt-get install libx11-dev libxmu-dev build-essential
+   *  # cd /tmp # Change to temp directory. (Should be /usr/src but need to be root for that)
+   *  # wget http://downloads.sourceforge.net/project/xlayout/xlayout/xlayout-0.9/xlayout-0.9.tar.bz2
+   *  # tar -jxf xlayout-0.9.tar.bz2 # Extract the contents (-j: bzip2 -x: extract -f: file)
+   *  # cd xlayout-0.9 # Change into the xlayout source directory.
 
-  Now that you have xlayout compiled, run 'make install' to install xlayout,
-  and the man pages and documentation into your system.
+3.*** ALL USERS ONCE YOU HAVE COMPLETED SECTION 2 OR 3 ***
+   *  # ./configure --help # Check which options you need. I use --prefix=/usr
+   *  # ./configure <OPTIONS> # configure xlayout with your options.
+   *  # make # Builds xlayout source into a binary file.
+   *  # sudo make install # Installs xlayout, the header, andthe man file.
 

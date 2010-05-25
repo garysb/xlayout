@@ -1,3 +1,25 @@
+##### 0.9 ##########
+This release of xlayout focuses on stablising and adding regex.
+ 1) More updates have been made to refine the command line arguments to be more
+    intuitive. You now dont need to force the --set flag and using no flags now
+    returns the minimal window list.
+ 2) By default, the window list now only returns windows that have an associated
+    command line value set. This still wont help you get an accurate list of
+    valid window id's for windows being displayed, but it does give you a better
+    idea of what windows are open. To display all the windows, use --verbose=8
+ 3) When running a command on a window specified by a name, create_window_named
+    now now not only searches the XFetchName, but also the value of XGetWMName,
+    the name and class of XGetClassHint, and the command used to start the app
+    using XGetCommand.
+ 4) When searching for windows to perform actions on, you can now use a regex in
+    the name option. This lets you search for windows containing words, or to
+    specify windows who's names you arent completely sure of.
+ 5) The autoconf scripts have been updated to support version 2.65 of autoconf.
+ 6) xlayout now correctly gets its version numbers and contact/bug report detail
+    from autoconf.
+ 7) Fixed a segfault triggered when the user specified both the --set and one of
+    --top, --unhide, --hide together.
+
 ##### 0.8 ##########
 This release of xlayout is a major overhaul.
  1) Updates have been made to refine the command line arguments to be more
