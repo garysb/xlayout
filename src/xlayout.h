@@ -54,8 +54,8 @@ typedef struct {
 /* Window Information */
 typedef struct {
 	Window window;
-	char *name;
 	char *id;
+	char *name;
 	/* Window geometry */
 	int x;
 	int y;
@@ -83,6 +83,7 @@ int count_screens();
 /* Pointer Functions */
 void display_pointer();
 void hide_pointer();
+void show_pointer();
 void set_pointer();
 void get_pointer(XLPointer *gp);
 #ifdef HAVE_EASE_MULTI
