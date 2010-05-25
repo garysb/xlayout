@@ -29,6 +29,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #include <ease.h>
 #endif
 
+/* If automake finds regex.h, then include the header file */
+#ifdef HAVE_REGEX_H
+#include <regex.h>
+#endif
+
 /* Enumeration for toggling state */
 enum toggle {UNSET=0, SET=1};
 

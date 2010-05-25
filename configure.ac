@@ -13,7 +13,7 @@ AC_PROG_CC
 
 # Checks for header files and make sure ease has ease_multi
 AC_PATH_X
-AC_CHECK_HEADERS([stdlib.h string.h unistd.h])
+AC_CHECK_HEADERS([stdlib.h string.h unistd.h regex.h])
 AC_HEADER_STDC
 AC_EGREP_HEADER(ease_multi, ease.h, AC_DEFINE(HAVE_EASE_MULTI, 1, [Define to 1 if you have ease_multi]))
 

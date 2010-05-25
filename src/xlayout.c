@@ -38,6 +38,11 @@ short int verbosity				= 5;
 XLDisplay d;
 XLPointer p;
 
+/* If we have regex, define a global regex compile */
+#ifdef HAVE_REGEX_H
+regex_t re;
+#endif
+
 /* Execute our main code block */
 int main(int argc, char **argv)
 {
@@ -193,6 +198,13 @@ int main(int argc, char **argv)
 			case 'n':
 				debug(9, "Setting window name to %s\n", optarg);
 				name = optarg;
+#ifdef HAVE_REGEX_H
+				/* Compile our regex expression */
+				if (regcomp(&re, name, REG_EXTENDED|REG_NOSUB) != 0) {
+					debug(5, "Invalid regular expression \"%s\"\n", name);
+					exit(1);
+				}
+#endif
 				break;
 #ifdef HAVE_EASE_MULTI
 			/* Enable easing */
@@ -507,9 +519,15 @@ void display_help()
 	debug(5, "                         xlayout -ld d01.localnet.com:0.0\n");
 	debug(5, "                         xlayout -l\n");
 	debug(5, "  Show win info:         xlayout --display :0.0 --info --id 0xa00001\n");
+#ifdef HAVE_REGEX_H
+	debug(5, "                         xlayout --info --name '[Ff]irefox' (regex example)\n");
+#endif
 	debug(5, "                         xlayout --info --name \"google.com - Mozilla Firefox\"\n");
 	debug(5, "                         xlayout -iw 0xa00001\n");
 	debug(5, "  Set window:            xlayout --set --name MPlayer --fullscreen\n");
+#ifdef HAVE_REGEX_H
+	debug(5, "                         xlayout -x --name \"^x(eyes|clock)\" (regex example)\n");
+#endif
 	debug(5, "                         xlayout --name MPlayer --hide --verbose 10\n");
 	debug(5, "                         xlayout --display domain.com:0.0 --name MPlayer --top\n");
 	debug(5, "                         xlayout -sn MPlayer -g 400x300+100+100\n");
@@ -767,25 +785,75 @@ void create_window(XLWindow *w)
 /* Select a window by the window name */
 Window create_window_named(char *name, Window tmp_window)
 {
+	/* Define our window and class structures */
 	Window *children, dummy, test_window;
 	XClassHint tmp_cname;
+	XTextProperty tmp_wmname;
+	char str_wmname[100];
+	char *tmp_name = NULL;
+	char **cliargv = NULL;
+	int cliargc;
 	unsigned int child_count;
 
-	debug(10, "Testing window 0x%lx for %s\n", tmp_window, name);
-	if (XGetClassHint(d.display, tmp_window, &tmp_cname)) {
-		debug(10, "Testing name %s\n", tmp_cname.res_name);
-		if (strcmp(tmp_cname.res_name, name) == 0) {
-			debug(10, "Found name %s\n", name);
+	/* Check if we have a match using the basic XFetchName */
+	if (XFetchName(d.display, tmp_window, &tmp_name)) {
+#ifdef HAVE_REGEX_H
+		if (!regexec(&re, tmp_name, (size_t)0, NULL, 0)) {
+#else
+		if (strcmp(tmp_name, name) == 0) {
+#endif
+			debug(9, "Found %s in 0x%lx using XFetchName\n", name, tmp_window);
 			return(tmp_window);
 		} else {
-			debug(10, "%s does not match\n", tmp_cname.res_name);
+			debug(9, "%s does not match XFetchName\n", tmp_name);
+		}
+	}
+
+	/* Check if we have a match using the basic XGetWMName */
+	if (XGetWMName(d.display, tmp_window, &tmp_wmname)) {
+		sprintf(str_wmname, "%s", tmp_wmname.value);
+#ifdef HAVE_REGEX_H
+		if (!regexec(&re, str_wmname, (size_t)0, NULL, 0)) {
+#else
+		if (strcmp(str_wmname, name) == 0) {
+#endif
+			debug(9, "Found %s in 0x%lx using XGetWMName\n", name, tmp_window);
+			return(tmp_window);
+		} else {
+			debug(9, "%s does not match XGetWMName\n", str_wmname);
+		}
+	}
+
+	/* Check if we have a match from XGetClassHint for this window */
+	if (XGetClassHint(d.display, tmp_window, &tmp_cname)) {
+#ifdef HAVE_REGEX_H
+		if (!regexec(&re, tmp_cname.res_name, (size_t)0, NULL, 0) || !regexec(&re, tmp_cname.res_class, (size_t)0, NULL, 0)) {
+#else
+		if ((strcmp(tmp_cname.res_name, name) == 0) || (strcmp(tmp_cname.res_class, name) == 0)) {
+#endif
+			debug(9, "Found %s in 0x%lx using class hints\n", name, tmp_window);
+			return(tmp_window);
+		} else {
+			debug(9, "%s does not match XGetClassHint\n", tmp_cname.res_name);
 		}
 
-		// debug(8, "Cleaning tmp_cname\n");
+		/* Clean up our resources */
 		XFree(tmp_cname.res_name);
 		XFree(tmp_cname.res_class);
-	} else {
-		debug(10, "0x%lx has no name\n", tmp_window);
+	}
+
+	/* Check if we have a match using the basic XGetCommand */
+	if (XGetCommand(d.display, tmp_window, &cliargv, &cliargc)) {
+#ifdef HAVE_REGEX_H
+		if (!regexec(&re, *cliargv, (size_t)0, NULL, 0)) {
+#else
+		if (strcmp(cliargv, name) == 0) {
+#endif
+			debug(9, "Found %s in 0x%lx using XGetCommand\n", name, tmp_window);
+			return(tmp_window);
+		} else {
+			debug(9, "%s does not match XGetCommand\n", *cliargv);
+		}
 	}
 
 	/* Fetch a list of children windows for the current window */
@@ -944,7 +1012,7 @@ void list_windows(Window w, int depth)
 
 		if (!XGetCommand(d.display, children[child_count], &cliargv, &cliargc)) {
 			if (machtp.value) XFree ((char *) machtp.value);
-			if (verbosity <= 8) {
+			if (verbosity <= 7) {
 				continue;
 			}
 		}
@@ -984,9 +1052,12 @@ void list_windows(Window w, int depth)
 void display_window(XLWindow *w)
 {
 	/* Fetch the windows name */
-	debug(8, "Fetching windows name for %s\n", w->id);
+	debug(8, "Fetching windows name for 0x%lx\n", w->window);
 	char *tmp_name;
+	char **cliargv = NULL;
+	int cliargc;
 	XTextProperty tmp_wmname;
+	XClassHint cname;
 
 	XFetchName(d.display, w->window, &tmp_name);
 	XGetWMName(d.display, w->window, &tmp_wmname);
@@ -994,7 +1065,7 @@ void display_window(XLWindow *w)
 	debug(8, "Windows name returned %s\n", w->name);
 
 	/* Fetch the windows attributes */
-	debug(8, "Fetching windows attributes for %s\n", w->id);
+	debug(8, "Fetching windows attributes for 0x%lx\n", w->name);
 	XWindowAttributes window_attributes;
 	if (XGetWindowAttributes(d.display,w->window, &window_attributes) == 0) {
 		debug(5, "failed to get window attributes\n");
@@ -1012,6 +1083,8 @@ void display_window(XLWindow *w)
 	debug(5, "Window Name:   %s\n", tmp_wmname.value);
 	debug(5, "WM Name:       %s\n", tmp_wmname.value);
 	debug(5, "Window Id:     0x%lx\n", w->window);
+	XGetClassHint(d.display, w->window, &cname) ? debug(5, "Inst/Class:    %s/%s\n", cname.res_name, cname.res_class) : (void)NULL;
+	XGetCommand(d.display, w->window, &cliargv, &cliargc) ? debug(5, "Command:       %s\n", *cliargv) : (void)NULL;
 	debug(5, "geometry:      ");
 	debug(1, "%dx%d+%d+%d\n", w->w, w->h, w->x, w->y);
 	debug(5, "X Position:    %d\n", w->x);
