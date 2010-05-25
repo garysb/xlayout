@@ -105,7 +105,7 @@ int main(int argc, char **argv)
 	/* Process commandline options */
 	while (1) {
 		/* Get the option variable for this pass */
-		i = getopt_long(argc,argv,"vhd:c:pftxg:w:n:esiul",long_options, &option_index);
+		i = getopt_long(argc,argv,"vhbd:c:pftxg:w:n:esiul",long_options, &option_index);
 		if (i == -1) {break;}
 
 		/* Run actions on our commands passed into the program */
@@ -128,7 +128,7 @@ int main(int argc, char **argv)
 				} else {
 					verbosity++;
 				}
-				debug(8, "verbosity set to %d\n", verbosity);
+				debug(10, "verbosity set to %d\n", verbosity);
 				break;
 
 			/* Display help information */
@@ -161,37 +161,37 @@ int main(int argc, char **argv)
 				break;
 			/* Set the display */
 			case 'd':
-				debug(8, "Setting display to %s\n", optarg);
+				debug(9, "Setting display to %s\n", optarg);
 				d.name = optarg;
 				break;
 			/* Toggle actions on pointer instead of window */
 			case 'p':
-				debug(8, "Running actions on pointer\n");
+				debug(9, "Running actions on pointer\n");
 				pointer_flag = 1;
 				break;
 				/* Set the screen */
 			case 'c':
-				debug(8, "Setting screen to %s\n", optarg);
+				debug(9, "Setting screen to %s\n", optarg);
 				d.screen = atoi(optarg);
 				break;
 			/* Set the geometry */
 			case 'g':
-				debug(8, "Setting geometry to %s\n", optarg);
+				debug(9, "Setting geometry to %s\n", optarg);
 				geometry = optarg;
 				break;
 			/* Set the geometry to fullscreen */
 			case 'f':
-				debug(8, "Setting geometry to fullscreen\n", optarg);
+				debug(9, "Setting geometry to fullscreen\n", optarg);
 				geometry = "fullscreen";
 				break;
 			/* Set the window id */
 			case 'w':
-				debug(8, "Setting window id to %s\n", optarg);
+				debug(9, "Setting window id to %s\n", optarg);
 				id = optarg;
 				break;
 			/* Set the window name */
 			case 'n':
-				debug(8, "Setting window name to %s\n", optarg);
+				debug(9, "Setting window name to %s\n", optarg);
 				name = optarg;
 				break;
 #ifdef HAVE_EASE_MULTI
@@ -208,7 +208,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Execute our utility actions */
-	(help_flag) ? display_help() : (void)NULL;
+	(help_flag||argc==1) ? display_help() : (void)NULL;
 	(version_flag) ? display_version() : (void)NULL;
 
 	/* Create a connection to the display */
@@ -221,25 +221,25 @@ int main(int argc, char **argv)
 	if (root_flag || id || name) {
 		/* Choose the window to use */
 		if (root_flag) {
-			debug(8, "Using window id '0' (root window)\n");
+			debug(9, "Using window id '0' (root window)\n");
 			w.id = "0";
 		} else if (id) {
-			debug(8, "Using window id %s\n", id);
+			debug(9, "Using window id %s\n", id);
 			w.id = id;
 		} else if (name) {
-			debug(8, "Using window named %s\n", name);
+			debug(9, "Using window named %s\n", name);
 			w.id = "n";
 			w.name = name;
 		}
 	}
 
 	/* Display info about the pointer */
-	if (pointer_flag && info_flag) {
+	if (pointer_flag && (info_flag || (!set_flag && !hide_flag && !show_flag && !geometry))) {
 		display_pointer();
 	}
 
 	/* Set the location of the pointer */
-	else if (pointer_flag && set_flag) {
+	else if (pointer_flag && ((set_flag || geometry) && !show_flag && !hide_flag)) {
 		/* First check that the geometry is set */
 		if (!geometry) {
 			display_help();
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 				/* Get the current pointer position */
 				XLPointer gp;
 				get_pointer(&gp);
-				debug(8, "Current pointer position is x:%d, y:%d\n", gp.x, gp.y);
+				debug(9, "Current pointer position is x:%d, y:%d\n", gp.x, gp.y);
 
 				/* Get the geometry as x, y coordinates */
 				int x, y, w, h, g;
@@ -303,16 +303,21 @@ int main(int argc, char **argv)
 		hide_pointer();
 	}
 
+	/* Show the pointer */
+	else if (pointer_flag && show_flag) {
+		/* Unhide the pointer */
+		show_pointer();
+	}
+
 	/* List the windows */
 	else if (list_flag) {
 		Window root;
 		root = RootWindow(d.display,d.screen);
-		// debug(6, "ID (STATE, GEOMETRY, NAME)\n\n");
 		list_windows(root, 0);
 	}
 
 	/* Display information about a window */
-	else if (!pointer_flag && info_flag) {
+	else if (!pointer_flag && (info_flag || (!set_flag && !top_flag && !show_flag && !hide_flag && !geometry))) {
 		/* Make sure a window was set */
 		(!w.id && !w.name) ? display_help() : (void)NULL;
 
@@ -322,7 +327,7 @@ int main(int argc, char **argv)
 	}
 
 	/* Set the windows geometry */
-	else if (!pointer_flag && set_flag) {
+	else if (!pointer_flag && ((set_flag || geometry) && !top_flag && !show_flag && !hide_flag)) {
 		/* Make sure a window was set */
 		(!w.id && !w.name && !geometry) ? display_help() : (void)NULL;
 
@@ -464,7 +469,7 @@ void display_version()
 	debug(5, "This is free software: you are free to change and redistribute it.\n");
 	debug(5, "There is NO WARRANTY, to the extent permitted by law.\n");
 	debug(5, "\nWritten by %s (%s)\n", author, PACKAGE_BUGREPORT);
-	debug(5, "%s\n", PACKAGE_URL);
+	debug(5, "           %s\n", PACKAGE_URL);
 	exit(0);
 }
 
@@ -494,8 +499,8 @@ void display_help()
 	debug(5, "  -g, --geometry         Set the geometry of the window or pointer\n");
 	debug(5, "  -f, --fullscreen       Set the window to the size of the screen\n");
 	debug(5, "  -t, --top              Set window to display on the top of all others\n");
-	debug(5, "  -x, --hidden           Hide the window or pointer\n");
-	debug(5, "  -u, --show             Unhide the window or pointer\n");
+	debug(5, "  -x, --hide             Hide the window or pointer\n");
+	debug(5, "  -u, --unhide           Unhide the window or pointer\n");
 	debug(5, "\n");
 	debug(5, "examples:\n");
 	debug(5, "  List windows:          xlayout --display :1.0 --list\n");
@@ -505,7 +510,7 @@ void display_help()
 	debug(5, "                         xlayout --info --name \"google.com - Mozilla Firefox\"\n");
 	debug(5, "                         xlayout -iw 0xa00001\n");
 	debug(5, "  Set window:            xlayout --set --name MPlayer --fullscreen\n");
-	debug(5, "                         xlayout --name MPlayer --hidden --verbose 10\n");
+	debug(5, "                         xlayout --name MPlayer --hide --verbose 10\n");
 	debug(5, "                         xlayout --display domain.com:0.0 --name MPlayer --top\n");
 	debug(5, "                         xlayout -sn MPlayer -g 400x300+100+100\n");
 #ifdef HAVE_EASE_MULTI
@@ -554,6 +559,7 @@ int count_screens()
 	d.screen_count	= XScreenCount(d.display);
 	debug(5, "There are ");
 	debug(1, "%d", d.screen_count);
+	(verbosity==1) ? debug(1,"\n") : (void)NULL;
 	debug(5, "screens\n");
 	return(0);
 }
@@ -574,9 +580,9 @@ void display_pointer()
 	/* Call XQueryPointer to get the resulting x and y coordinates */
 	debug(10, "Getting pointer coordinates\n", d.name);
 	XQueryPointer(d.display, w.window, &w.window, &w.window, &x, &y, &dummy, &dummy, &mask);
-	debug(5, "X Position: ");
-	debug(1, "%d\n", x);
-	debug(5, "Y Position: ");
+	debug(5, "X: ");
+	debug(1, "%d, ", x);
+	debug(5, "Y: ");
 	debug(1, "%d\n", y);
 }
 
@@ -640,20 +646,66 @@ int ease_pointer(Ease_Multi *e, va_list ap)
 /* Hide the pointer */
 void hide_pointer()
 {
-	/* Creating a new single pixel image for the pointer */
-	debug(5, "Setting the pointer to hidden\n");
-	p.pix = XCreatePixmap(d.display, DefaultRootWindow(d.display), 1, 1, 1);
-	p.colour.pixel = 0;
-	p.colour.red = 0;
-	p.colour.green = 0;
-	p.colour.blue = 0;
-	p.colour.flags = 0;
-	p.colour.pad = 0;
+	debug(8, "Setting the pointer to hidden\n");
 
-	/* Assign the pixel to the cursor */
-	p.blank = XCreatePixmapCursor(d.display, p.pix, p.pix, &p.colour, &p.colour, 1, 1);
-	XDefineCursor(d.display, DefaultRootWindow(d.display), p.blank);
-	XFlush(d.display);
+	/* Pointer window information */
+	XLWindow w;
+	w.id = "0";
+	int x, y;
+	unsigned int mask;
+
+	/* Cursor information */
+	Pixmap bm_no;
+	Colormap cmap;
+	Cursor no_ptr;
+	XColor black, dummy;
+	static char bm_no_data[] = {0, 0, 0, 0, 0, 0, 0, 0};
+
+	/* Call XQueryPointer to get the current window the pointer is on */
+	debug(10, "Getting pointers current window\n");
+	create_window(&w);
+	XQueryPointer(d.display, w.window, &w.window, &w.window, &x, &y, &x, &y, &mask);
+
+	/* Create a transparent single pixel bitmap to be used as our cursor */
+	cmap = DefaultColormap(d.display, DefaultScreen(d.display));
+	XAllocNamedColor(d.display, cmap, "black", &black, &dummy);
+	bm_no = XCreateBitmapFromData(d.display, w.window, bm_no_data, 8, 8);
+	no_ptr = XCreatePixmapCursor(d.display, bm_no, bm_no, &black, &black, 0, 0);
+
+	/* Map the transparent cursor to the current windows cursor */
+	XDefineCursor(d.display, w.window, no_ptr);
+	XFreeCursor(d.display, no_ptr);
+
+	/* Cleanup our mess */
+	if (bm_no != None)
+		XFreePixmap(d.display, bm_no);
+	XFreeColors(d.display, cmap, &black.pixel, 1, 0);
+
+	return;
+}
+
+/* Show the pointer */
+void show_pointer()
+{
+	debug(8, "Setting the pointer to shown\n");
+
+	/* Cursor and window variables */
+	Cursor csr;
+	XLWindow w;
+	w.id = "0";
+	int x, y;
+	unsigned int mask;
+
+	/* Create a connection to the root window, then overwrite it with the */
+	/* window the pointer is currently over */
+	create_window(&w);
+	XQueryPointer(d.display, w.window, &w.window, &w.window, &x, &y, &x, &y, &mask);
+
+	/* Create the default cursor, then map it to the window */
+	csr = XCreateFontCursor(d.display, XC_left_ptr);
+	XDefineCursor(d.display, w.window, csr);
+	XFreeCursor(d.display, csr);
+
 	return;
 }
 
@@ -699,12 +751,9 @@ void create_window(XLWindow *w)
 	if (strcmp(w->name, "NULL")) {
 		debug(8, "Searching for window named %s\n", w->name);
 		Window root;
-		//char *name;
-		char tmp_id[20];
 		root = RootWindow(d.display,d.screen);
 		w->window = create_window_named(w->name, root);
-		sprintf(tmp_id, "0x%lx", w->window);
-		w->id = tmp_id;
+		debug(10, "window: 0x%lx\n", w->window);
 	}
 
 	/* We cant set the window, return an error */
@@ -718,27 +767,47 @@ void create_window(XLWindow *w)
 /* Select a window by the window name */
 Window create_window_named(char *name, Window tmp_window)
 {
-	Window *children, dummy;
+	Window *children, dummy, test_window;
+	XClassHint tmp_cname;
 	unsigned int child_count;
-	char *window_name;
 
-	debug(8, "Testing window 0x%lx\n", tmp_window);
-	if (XFetchName(d.display, tmp_window, &window_name) && strcmp(window_name, name) == 0) {
-		return(tmp_window);
+	debug(10, "Testing window 0x%lx for %s\n", tmp_window, name);
+	if (XGetClassHint(d.display, tmp_window, &tmp_cname)) {
+		debug(10, "Testing name %s\n", tmp_cname.res_name);
+		if (strcmp(tmp_cname.res_name, name) == 0) {
+			debug(10, "Found name %s\n", name);
+			return(tmp_window);
+		} else {
+			debug(10, "%s does not match\n", tmp_cname.res_name);
+		}
+
+		// debug(8, "Cleaning tmp_cname\n");
+		XFree(tmp_cname.res_name);
+		XFree(tmp_cname.res_class);
+	} else {
+		debug(10, "0x%lx has no name\n", tmp_window);
 	}
 
+	/* Fetch a list of children windows for the current window */
 	if (!XQueryTree(d.display, tmp_window, &dummy, &dummy, &children, &child_count)) {
+		debug(10, "0x%lx has no children\n", tmp_window);
 		return(0);
-	}
-
-	while (child_count--) {
-		tmp_window = create_window_named(name, children[child_count]);
-		if (tmp_window)
-			break;
+	} else {
+		debug(10, "Have %d children\n", child_count);
+		while (child_count--) {
+			test_window = create_window_named(name, children[child_count]);
+			debug(10, "Checking if 0x%lx is a result with %d more children\n", test_window, child_count);
+			if (test_window != 0) {
+				debug(10, "tmp_window: 0x%lx\n", test_window);
+				return(test_window);
+				break;
+			}
+		}
 	}
 
 	//if (children) XFree ((char *)children);
-	return(tmp_window);
+	debug(10, "Got to the end\n");
+	return(0);
 }
 
 /* Map the window for view */
@@ -805,7 +874,7 @@ void set_window(XLWindow *w)
 	} else {
 		XWindowAttributes window_attributes;
 		if (XGetWindowAttributes(d.display, RootWindow(d.display,d.screen), &window_attributes) == 0) {
-			printf("Failed to get the root window attributes\n");
+			debug(5, "Failed to get the root window attributes\n");
 			exit(1);
 		}
 		rx 	= window_attributes.x;
@@ -941,8 +1010,8 @@ void display_window(XLWindow *w)
 
 	/* Display name, id, and geometry information */
 	debug(5, "Window Name:   %s\n", tmp_wmname.value);
-	debug(5, "WM Name:   %s\n", tmp_wmname.value);
-	debug(5, "Window Id:     %s\n", w->id);
+	debug(5, "WM Name:       %s\n", tmp_wmname.value);
+	debug(5, "Window Id:     0x%lx\n", w->window);
 	debug(5, "geometry:      ");
 	debug(1, "%dx%d+%d+%d\n", w->w, w->h, w->x, w->y);
 	debug(5, "X Position:    %d\n", w->x);
@@ -979,3 +1048,4 @@ void display_window(XLWindow *w)
 	debug(5, "Overridable:   %s\n", window_attributes.override_redirect ? "false" : "true");
 	return;
 }
+
