@@ -4,8 +4,8 @@ REG:  Now that we have a working regular expression engine, we need to allow the
       does and --info --name, then we should return multiple results of info. We
       could also add the option to control multiple windows at the same time.
 
-REG:  Include the pcre regex engine also if the user has it on there sustem. We
-      can then try parse with the cheapest on unless the regex syntax is wrong,
+REG:  Include the pcre regex engine also if the user has it on there system. We
+      can then try parse with the cheapest one unless the regex syntax is wrong,
       then try use the other regex library. (aka. handle both syntaxes)
 
 EASE: We need to find an eligant way of letting the user define which type of
@@ -17,7 +17,7 @@ EASE: The ease option should also not require the --set option as the point of
 
 LIST: When listing windows with the short/default version, it would be good to
       try get the actual window being displayed instead of the window that the
-      command created. Not sure if its possible without loads on dependancies.
+      command created. Not sure if its possible without loads of dependancies.
 
 CMD:  For some reason the --verbose option isnt working properly in its short
       form. Need to investigate further.

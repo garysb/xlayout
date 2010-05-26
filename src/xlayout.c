@@ -481,7 +481,9 @@ void display_version()
 	debug(5, "This is free software: you are free to change and redistribute it.\n");
 	debug(5, "There is NO WARRANTY, to the extent permitted by law.\n");
 	debug(5, "\nWritten by %s (%s)\n", author, PACKAGE_BUGREPORT);
+#ifdef PACKAGE_URL
 	debug(5, "           %s\n", PACKAGE_URL);
+#endif
 	exit(0);
 }
 
@@ -699,6 +701,7 @@ void hide_pointer()
 		XFreePixmap(d.display, bm_no);
 	XFreeColors(d.display, cmap, &black.pixel, 1, 0);
 
+	debug(5, "Pointer hidden\n");
 	return;
 }
 
@@ -724,6 +727,7 @@ void show_pointer()
 	XDefineCursor(d.display, w.window, csr);
 	XFreeCursor(d.display, csr);
 
+	debug(5, "Pointer shown\n");
 	return;
 }
 
