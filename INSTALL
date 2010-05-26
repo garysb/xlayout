@@ -40,5 +40,5 @@ match your environment.
    *  # ./configure --help # Check which options you need. I use --prefix=/usr
    *  # ./configure <OPTIONS> # configure xlayout with your options.
    *  # make # Builds xlayout source into a binary file.
-   *  # sudo make install # Installs xlayout, the header, andthe man file.
+   *  # sudo make install # Installs xlayout, the header, and the man file.
 
