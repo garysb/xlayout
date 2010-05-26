@@ -1,5 +1,5 @@
 # Ensure we have the correct version of autoconf running and initialise it
-AC_PREREQ([2.64])
+AC_PREREQ([2.61])
 AC_INIT(xlayout, 0.9, xlayout@stroppytux.net, ,http://www.stroppytux.net/projects/xlayout/)
 
 # Set some information about the headers and makefiles
@@ -13,7 +13,7 @@ AC_PROG_CC
 
 # Checks for header files and make sure ease has ease_multi
 AC_PATH_X
-AC_CHECK_HEADERS([stdlib.h string.h unistd.h],,[AC_MSG_ERROR([required header file missing]))
+AC_CHECK_HEADERS([stdlib.h string.h unistd.h],,AC_MSG_ERROR([required header file missing]))
 AC_CHECK_HEADERS([regex.h])
 AC_HEADER_STDC
 AC_EGREP_HEADER(ease_multi, ease.h, AC_DEFINE(HAVE_EASE_MULTI, 1, [Define to 1 if you have ease_multi]))
